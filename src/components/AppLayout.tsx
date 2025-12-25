@@ -9,6 +9,7 @@ import {
 	Music,
 	Search,
 	Sun,
+	Tags,
 	Users,
 	X,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const navItems = [
 	{ to: "/app/search", icon: Search, label: "Search" },
 	{ to: "/app/albums", icon: Disc3, label: "Albums" },
 	{ to: "/app/artists", icon: Users, label: "Artists" },
+	{ to: "/app/genres", icon: Tags, label: "Genres" },
 	{ to: "/app/songs", icon: Music, label: "Songs" },
 ];
 
@@ -41,8 +43,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 	const currentPath = router.location.pathname;
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-	// Close mobile menu on route change
-	// biome-ignore lint/correctness/useExhaustiveDependencies: currentPath is intentionally used to trigger menu close on navigation
+	// biome-ignore lint: currentPath is intentionally used to trigger menu close on navigation
 	useEffect(() => {
 		setMobileMenuOpen(false);
 	}, [currentPath]);

@@ -1,9 +1,13 @@
 import {
 	Disc3,
+	FileText,
 	ListMusic,
 	Loader2,
 	Pause,
 	Play,
+	Repeat,
+	Repeat1,
+	Shuffle,
 	SkipBack,
 	SkipForward,
 	Volume2,
@@ -15,6 +19,7 @@ import { useEffect, useState } from "react";
 import { StarButton } from "@/components/StarButton";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { LyricsPanel } from "@/components/LyricsPanel";
 import { getTrackCoverUrl, usePlayer } from "@/lib/player";
 import { cn } from "@/lib/utils";
 
@@ -35,12 +40,16 @@ export function Player() {
 		currentTime,
 		duration,
 		volume,
+		shuffle,
+		repeat,
 		togglePlayPause,
 		playNext,
 		playPrevious,
 		seek,
 		setVolume,
 		playSong,
+		toggleShuffle,
+		toggleRepeat,
 	} = usePlayer();
 
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -48,6 +57,7 @@ export function Player() {
 	const [seekValue, setSeekValue] = useState(0);
 	const [prevVolume, setPrevVolume] = useState(1);
 	const [showQueue, setShowQueue] = useState(false);
+	const [showLyrics, setShowLyrics] = useState(false);
 
 	useEffect(() => {
 		if (currentTrack?.coverArt) {
@@ -56,6 +66,63 @@ export function Player() {
 			setCoverUrl(null);
 		}
 	}, [currentTrack?.coverArt]);
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement;
+			const isInputFocused =
+				target.tagName === "INPUT" ||
+				target.tagName === "TEXTAREA" ||
+				target.isContentEditable;
+
+			if (isInputFocused) return;
+
+			switch (e.code) {
+				case "Space":
+					e.preventDefault();
+					togglePlayPause();
+					break;
+				case "ArrowLeft":
+					e.preventDefault();
+					seek(Math.max(0, currentTime - 10));
+					break;
+				case "ArrowRight":
+					e.preventDefault();
+					seek(Math.min(duration || 0, currentTime + 10));
+					break;
+				case "ArrowUp":
+					e.preventDefault();
+					setVolume(Math.min(1, volume + 0.1));
+					break;
+				case "ArrowDown":
+					e.preventDefault();
+					setVolume(Math.max(0, volume - 0.1));
+					break;
+				case "KeyN":
+					e.preventDefault();
+					playNext();
+					break;
+				case "KeyP":
+					e.preventDefault();
+					playPrevious();
+					break;
+				default:
+					break;
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [
+		togglePlayPause,
+		seek,
+		playNext,
+		playPrevious,
+		setVolume,
+		currentTime,
+		duration,
+		volume,
+	]);
 
 	// Don't render if no track
 	if (!currentTrack) {
@@ -154,6 +221,15 @@ export function Player() {
 					<Button
 						variant="ghost"
 						size="icon"
+						className={cn("w-8 h-8", shuffle && "text-primary")}
+						onClick={toggleShuffle}
+						title="Shuffle"
+					>
+						<Shuffle className="w-4 h-4" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon"
 						className="w-8 h-8"
 						onClick={playPrevious}
 					>
@@ -181,6 +257,25 @@ export function Player() {
 						onClick={playNext}
 					>
 						<SkipForward className="w-4 h-4" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						className={cn("w-8 h-8", repeat !== "off" && "text-primary")}
+						onClick={toggleRepeat}
+						title={
+							repeat === "off"
+								? "Repeat off"
+								: repeat === "all"
+									? "Repeat all"
+									: "Repeat one"
+						}
+					>
+						{repeat === "one" ? (
+							<Repeat1 className="w-4 h-4" />
+						) : (
+							<Repeat className="w-4 h-4" />
+						)}
 					</Button>
 				</div>
 
@@ -238,8 +333,23 @@ export function Player() {
 				<Button
 					variant="ghost"
 					size="icon"
+					className={cn("w-8 h-8", showLyrics && "text-primary")}
+					onClick={() => {
+						setShowQueue(false);
+						setShowLyrics(!showLyrics);
+					}}
+					title="View lyrics"
+				>
+					<FileText className="w-4 h-4" />
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon"
 					className={cn("w-8 h-8", showQueue && "text-primary")}
-					onClick={() => setShowQueue(!showQueue)}
+					onClick={() => {
+						setShowLyrics(false);
+						setShowQueue(!showQueue);
+					}}
 					title="View queue"
 				>
 					<ListMusic className="w-4 h-4" />
@@ -325,6 +435,17 @@ export function Player() {
 							</div>
 						)}
 					</div>
+				</div>
+			)}
+
+			{/* Lyrics panel */}
+			{showLyrics && (
+				<div className="absolute bottom-full right-0 mb-2 w-96 max-h-[60vh] bg-card border rounded-lg shadow-lg overflow-hidden">
+					<LyricsPanel
+						songTitle={currentTrack.title}
+						songArtist={currentTrack.artist ?? ""}
+						onClose={() => setShowLyrics(false)}
+					/>
 				</div>
 			)}
 		</div>

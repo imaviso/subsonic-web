@@ -338,3 +338,136 @@ export async function scrobble(
 		);
 	}
 }
+
+// Genre types and API functions
+export interface Genre {
+	value: string; // Genre name
+	songCount: number;
+	albumCount: number;
+}
+
+export interface Lyrics {
+	artist: string;
+	title: string;
+	structured?: boolean;
+	value?: string; // Plain text lyrics
+	lyrics?: Array<{ value: string; lang?: string }>; // Structured lyrics
+}
+
+export async function getLyrics(
+	artist: string,
+	title: string,
+): Promise<Lyrics | null> {
+	const url = await buildApiUrl("getLyrics", { artist, title });
+
+	const response = await fetch(url);
+	const data: SubsonicResponse<{
+		lyrics?: Lyrics;
+	}> = await response.json();
+
+	if (data["subsonic-response"].status !== "ok") {
+		return null;
+	}
+
+	return data["subsonic-response"].lyrics ?? null;
+}
+
+export async function getSimilarSongs2(
+	id: string,
+	count = 50,
+): Promise<Song[]> {
+	const url = await buildApiUrl("getSimilarSongs2", {
+		id,
+		count: count.toString(),
+	});
+
+	const response = await fetch(url);
+	const data: SubsonicResponse<{
+		similarSongs2?: { song?: Song[] };
+	}> = await response.json();
+
+	if (data["subsonic-response"].status !== "ok") {
+		return [];
+	}
+
+	return data["subsonic-response"].similarSongs2?.song ?? [];
+}
+
+export async function getSimilarArtists(
+	id: string,
+	count = 20,
+): Promise<Artist[]> {
+	const url = await buildApiUrl("getSimilarArtists2", {
+		id,
+		count: count.toString(),
+	});
+
+	const response = await fetch(url);
+	const data: SubsonicResponse<{
+		similarArtists2?: { artist?: Artist[] };
+	}> = await response.json();
+
+	if (data["subsonic-response"].status !== "ok") {
+		return [];
+	}
+
+	return data["subsonic-response"].similarArtists2?.artist ?? [];
+}
+
+export async function getArtistAlbums(artistId: string): Promise<Album[]> {
+	const url = await buildApiUrl("getArtist", { id: artistId });
+
+	const response = await fetch(url);
+	const data: SubsonicResponse<{
+		artist?: Artist & { album?: Album[] };
+	}> = await response.json();
+
+	if (data["subsonic-response"].status !== "ok") {
+		return [];
+	}
+
+	return data["subsonic-response"].artist?.album ?? [];
+}
+
+export async function getGenres(): Promise<Genre[]> {
+	const url = await buildApiUrl("getGenres");
+
+	const response = await fetch(url);
+	const data: SubsonicResponse<{
+		genres?: { genre?: Genre[] };
+	}> = await response.json();
+
+	if (data["subsonic-response"].status !== "ok") {
+		throw new Error(
+			data["subsonic-response"].error?.message || "Failed to fetch genres",
+		);
+	}
+
+	return data["subsonic-response"].genres?.genre ?? [];
+}
+
+export async function getSongsByGenre(
+	genre: string,
+	count = 50,
+	offset = 0,
+): Promise<Song[]> {
+	const url = await buildApiUrl("getSongsByGenre", {
+		genre,
+		count: count.toString(),
+		offset: offset.toString(),
+	});
+
+	const response = await fetch(url);
+	const data: SubsonicResponse<{
+		songsByGenre?: { song?: Song[] };
+	}> = await response.json();
+
+	if (data["subsonic-response"].status !== "ok") {
+		throw new Error(
+			data["subsonic-response"].error?.message ||
+				"Failed to fetch songs by genre",
+		);
+	}
+
+	return data["subsonic-response"].songsByGenre?.song ?? [];
+}

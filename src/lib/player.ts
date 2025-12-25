@@ -2,26 +2,82 @@ import { useSyncExternalStore } from "react";
 import type { Song } from "./api";
 import { getCoverArtUrl, getStreamUrl, scrobble } from "./api";
 
+// Media Session API support
+if ("mediaSession" in navigator) {
+	navigator.mediaSession.setActionHandler("play", () => {
+		play();
+	});
+	navigator.mediaSession.setActionHandler("pause", () => {
+		pause();
+	});
+	navigator.mediaSession.setActionHandler("previoustrack", () => {
+		playPrevious();
+	});
+	navigator.mediaSession.setActionHandler("nexttrack", () => {
+		playNext();
+	});
+	navigator.mediaSession.setActionHandler("seekto", (details) => {
+		if (details.seekTime !== undefined) {
+			seek(details.seekTime);
+		}
+	});
+}
+
+function updateMediaSession(song: Song) {
+	if ("mediaSession" in navigator) {
+		getTrackCoverUrl(song.coverArt, 300).then((coverUrl) => {
+			navigator.mediaSession.metadata = new MediaMetadata({
+				title: song.title,
+				artist: song.artist,
+				album: song.album,
+				artwork: coverUrl
+					? [
+							{
+								src: coverUrl,
+								sizes: "300x300",
+								type: "image/jpeg",
+							},
+						]
+					: [],
+			});
+		});
+	}
+}
+
+function updateMediaSessionState(isPlaying: boolean) {
+	if ("mediaSession" in navigator) {
+		navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+	}
+}
+
+export type RepeatMode = "off" | "all" | "one";
+
 export interface PlayerState {
 	currentTrack: Song | null;
 	queue: Song[];
+	originalQueue: Song[]; // Original queue order before shuffle
 	queueIndex: number;
 	isPlaying: boolean;
 	volume: number;
 	currentTime: number;
 	duration: number;
 	isLoading: boolean;
+	shuffle: boolean;
+	repeat: RepeatMode;
 }
 
 const initialState: PlayerState = {
 	currentTrack: null,
 	queue: [],
+	originalQueue: [],
 	queueIndex: -1,
 	isPlaying: false,
 	volume: 1,
 	currentTime: 0,
 	duration: 0,
 	isLoading: false,
+	shuffle: false,
+	repeat: "off",
 };
 
 let playerState: PlayerState = { ...initialState };
@@ -51,6 +107,19 @@ function getAudio(): HTMLAudioElement {
 
 		audio.addEventListener("timeupdate", () => {
 			updateState({ currentTime: audio?.currentTime ?? 0 });
+
+			// Update media session position
+			if ("mediaSession" in navigator) {
+				const currentTime = audio?.currentTime ?? 0;
+				const duration = audio?.duration ?? 0;
+				if (duration > 0) {
+					navigator.mediaSession.setPositionState({
+						duration,
+						playbackRate: audio?.playbackRate ?? 1,
+						position: currentTime,
+					});
+				}
+			}
 
 			// Check if we should scrobble (submission)
 			// Scrobble after 4 minutes or 50% of the song, whichever comes first
@@ -83,10 +152,12 @@ function getAudio(): HTMLAudioElement {
 
 		audio.addEventListener("playing", () => {
 			updateState({ isPlaying: true, isLoading: false });
+			updateMediaSessionState(true);
 		});
 
 		audio.addEventListener("pause", () => {
 			updateState({ isPlaying: false });
+			updateMediaSessionState(false);
 		});
 
 		audio.addEventListener("waiting", () => {
@@ -116,9 +187,14 @@ export async function playSong(
 	// Reset scrobble state for new song
 	scrobbledTrackId = null;
 
+	const newQueue = queue ?? [song];
 	updateState({
 		currentTrack: song,
-		queue: queue ?? [song],
+		queue: newQueue,
+		originalQueue:
+			playerState.originalQueue.length > 0
+				? playerState.originalQueue
+				: newQueue,
 		queueIndex: startIndex ?? 0,
 		isLoading: true,
 	});
@@ -127,6 +203,9 @@ export async function playSong(
 		const streamUrl = await getStreamUrl(song.id);
 		audioEl.src = streamUrl;
 		await audioEl.play();
+
+		// Update media session metadata
+		updateMediaSession(song);
 
 		// Report "now playing" if not already reported for this song
 		if (nowPlayingReported !== song.id) {
@@ -167,12 +246,22 @@ export function play() {
 }
 
 export async function playNext() {
-	const { queue, queueIndex } = playerState;
+	const { queue, queueIndex, repeat, currentTrack } = playerState;
 	if (queue.length === 0) return;
+
+	// Repeat one: replay current track
+	if (repeat === "one" && currentTrack) {
+		seek(0);
+		getAudio().play();
+		return;
+	}
 
 	const nextIndex = queueIndex + 1;
 	if (nextIndex < queue.length) {
 		await playSong(queue[nextIndex], queue, nextIndex);
+	} else if (repeat === "all") {
+		// Repeat all: go back to start
+		await playSong(queue[0], queue, 0);
 	} else {
 		// End of queue
 		updateState({ isPlaying: false });
@@ -181,7 +270,7 @@ export async function playNext() {
 }
 
 export async function playPrevious() {
-	const { queue, queueIndex, currentTime } = playerState;
+	const { queue, queueIndex, currentTime, repeat } = playerState;
 	if (queue.length === 0) return;
 
 	// If more than 3 seconds in, restart current track
@@ -193,6 +282,9 @@ export async function playPrevious() {
 	const prevIndex = queueIndex - 1;
 	if (prevIndex >= 0) {
 		await playSong(queue[prevIndex], queue, prevIndex);
+	} else if (repeat === "all") {
+		// Repeat all: go to last track
+		await playSong(queue[queue.length - 1], queue, queue.length - 1);
 	} else {
 		// At start, just restart
 		seek(0);
@@ -216,6 +308,7 @@ export function setVolume(volume: number) {
 export function addToQueue(songs: Song[]) {
 	updateState({
 		queue: [...playerState.queue, ...songs],
+		originalQueue: [...playerState.originalQueue, ...songs],
 	});
 }
 
@@ -224,6 +317,64 @@ export function clearQueue() {
 	audioEl.pause();
 	audioEl.src = "";
 	updateState({ ...initialState });
+}
+
+// Shuffle array using Fisher-Yates algorithm
+function shuffleArray<T>(array: T[]): T[] {
+	const shuffled = [...array];
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+	}
+	return shuffled;
+}
+
+export function toggleShuffle() {
+	const { shuffle, queue, queueIndex, currentTrack, originalQueue } =
+		playerState;
+
+	if (!shuffle) {
+		// Enable shuffle: save original queue and shuffle remaining songs
+		const currentSong = currentTrack;
+		const remainingSongs = queue.filter((_, i) => i !== queueIndex);
+		const shuffledRemaining = shuffleArray(remainingSongs);
+
+		// Put current song first, then shuffled remaining
+		const newQueue = currentSong
+			? [currentSong, ...shuffledRemaining]
+			: shuffledRemaining;
+
+		updateState({
+			shuffle: true,
+			originalQueue: originalQueue.length > 0 ? originalQueue : queue,
+			queue: newQueue,
+			queueIndex: 0,
+		});
+	} else {
+		// Disable shuffle: restore original queue order
+		const currentSong = currentTrack;
+		const newIndex = currentSong
+			? originalQueue.findIndex((s) => s.id === currentSong.id)
+			: 0;
+
+		updateState({
+			shuffle: false,
+			queue: originalQueue,
+			queueIndex: newIndex >= 0 ? newIndex : 0,
+		});
+	}
+}
+
+export function toggleRepeat() {
+	const { repeat } = playerState;
+	const modes: RepeatMode[] = ["off", "all", "one"];
+	const currentIndex = modes.indexOf(repeat);
+	const nextMode = modes[(currentIndex + 1) % modes.length];
+	updateState({ repeat: nextMode });
+}
+
+export function setRepeat(mode: RepeatMode) {
+	updateState({ repeat: mode });
 }
 
 // Cover art URL cache
@@ -272,5 +423,8 @@ export function usePlayer() {
 		setVolume,
 		addToQueue,
 		clearQueue,
+		toggleShuffle,
+		toggleRepeat,
+		setRepeat,
 	};
 }

@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Clock, Disc3, Pause, Play } from "lucide-react";
+import { ArrowLeft, Clock, Disc3, Pause, Play, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { StarButton } from "@/components/StarButton";
 import { Button } from "@/components/ui/button";
+import { MoreByArtist } from "@/components/MoreByArtist";
 import { getAlbum, getCoverArtUrl } from "@/lib/api";
 import { playAlbum, playSong, usePlayer } from "@/lib/player";
 import { cn } from "@/lib/utils";
@@ -142,10 +143,34 @@ function AlbumDetailPage() {
 						{album.name}
 					</h1>
 					<div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-muted-foreground">
-						{album.artist && (
+						{album.artistId && album.artist && (
+							<Link
+								to="/app/artists/$artistId"
+								params={{ artistId: album.artistId }}
+								className="font-medium text-foreground hover:text-primary transition-colors"
+							>
+								{album.artist}
+							</Link>
+						)}
+						{album.artist && !album.artistId && (
 							<span className="font-medium text-foreground">
 								{album.artist}
 							</span>
+						)}
+						{album.genre && (
+							<>
+								<span>•</span>
+								<Link
+									to="/app/genres/$genreName"
+									params={{
+										genreName: encodeURIComponent(album.genre),
+									}}
+									className="flex items-center gap-1 text-foreground hover:text-primary transition-colors"
+								>
+									<Tag className="w-3 h-3" />
+									<span>{album.genre}</span>
+								</Link>
+							</>
 						)}
 						{album.year && (
 							<>
@@ -296,6 +321,11 @@ function AlbumDetailPage() {
 					})}
 				</div>
 			</div>
+
+			{/* More albums by this artist */}
+			{album.artistId && (
+				<MoreByArtist artistId={album.artistId} excludeAlbumId={album.id} />
+			)}
 		</div>
 	);
 }
