@@ -1,8 +1,7 @@
-import { Music, Play, Shuffle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-
-import { Button } from "@/components/ui/button";
+import { Music, Play, Shuffle } from "lucide-react";
 import { SongList } from "@/components/SongList";
+import { Button } from "@/components/ui/button";
 import { getSimilarSongs2 } from "@/lib/api";
 import { playAlbum } from "@/lib/player";
 

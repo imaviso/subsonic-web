@@ -1,5 +1,5 @@
-import { Disc3 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Disc3 } from "lucide-react";
 
 import { AlbumGrid } from "@/components/AlbumCard";
 import { getArtistAlbums } from "@/lib/api";

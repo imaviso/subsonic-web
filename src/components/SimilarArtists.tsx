@@ -1,8 +1,7 @@
-import { Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-
-import { getSimilarArtists, type Artist } from "@/lib/api";
+import { Users } from "lucide-react";
 import { ArtistCard } from "@/components/ArtistCard";
+import { type Artist, getSimilarArtists } from "@/lib/api";
 
 interface SimilarArtistsProps {
 	artistId?: string;

@@ -4,8 +4,8 @@ import { ArrowLeft, User } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AlbumGrid } from "@/components/AlbumCard";
-import { Button } from "@/components/ui/button";
 import { SimilarArtists } from "@/components/SimilarArtists";
+import { Button } from "@/components/ui/button";
 import { getArtist, getCoverArtUrl } from "@/lib/api";
 
 export const Route = createFileRoute("/app/artists/$artistId")({

@@ -2,10 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Disc3, Pause, Play, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import { MoreByArtist } from "@/components/MoreByArtist";
 import { StarButton } from "@/components/StarButton";
 import { Button } from "@/components/ui/button";
-import { MoreByArtist } from "@/components/MoreByArtist";
 import { getAlbum, getCoverArtUrl } from "@/lib/api";
 import { playAlbum, playSong, usePlayer } from "@/lib/player";
 import { cn } from "@/lib/utils";

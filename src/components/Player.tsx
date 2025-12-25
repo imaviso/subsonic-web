@@ -15,11 +15,10 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import { LyricsPanel } from "@/components/LyricsPanel";
 import { StarButton } from "@/components/StarButton";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { LyricsPanel } from "@/components/LyricsPanel";
 import { getTrackCoverUrl, usePlayer } from "@/lib/player";
 import { cn } from "@/lib/utils";
 
