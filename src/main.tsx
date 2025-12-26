@@ -1,4 +1,8 @@
-import { createRouter, RouterProvider } from "@tanstack/react-router";
+import {
+	createHashHistory,
+	createRouter,
+	RouterProvider,
+} from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
@@ -11,6 +15,8 @@ import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
 
 // Create a new router instance
+// Use hash history for Electron compatibility (file:// protocol)
+const hashHistory = createHashHistory();
 
 const TanStackQueryProviderContext = TanStackQueryProvider.getContext();
 const router = createRouter({
@@ -18,6 +24,7 @@ const router = createRouter({
 	context: {
 		...TanStackQueryProviderContext,
 	},
+	history: hashHistory,
 	defaultPreload: "intent",
 	scrollRestoration: true,
 	defaultStructuralSharing: true,

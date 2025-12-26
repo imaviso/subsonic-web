@@ -21,4 +21,6 @@ export default defineConfig({
 			"@": fileURLToPath(new URL("./src", import.meta.url)),
 		},
 	},
+	// Electron compatibility: use relative paths for assets
+	base: "./",
 });
