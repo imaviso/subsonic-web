@@ -14,8 +14,74 @@ import {
 	CommandSeparator,
 } from "@/components/ui/command";
 import type { Album, Artist, Song } from "@/lib/api";
-import { search } from "@/lib/api";
+import { getCoverArtUrl, search } from "@/lib/api";
 import { playSong } from "@/lib/player";
+
+function ArtistCover({ artistId }: { artistId: string }) {
+	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+	useEffect(() => {
+		getCoverArtUrl(`ar-${artistId}`, 40)
+			.then(setCoverUrl)
+			.catch(() => {});
+	}, [artistId]);
+
+	return (
+		<div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0 mr-2">
+			{coverUrl ? (
+				<img src={coverUrl} alt="" className="w-full h-full object-cover" />
+			) : (
+				<div className="w-full h-full flex items-center justify-center">
+					<User className="w-4 h-4 text-muted-foreground" />
+				</div>
+			)}
+		</div>
+	);
+}
+
+function AlbumCover({ coverArt }: { coverArt?: string }) {
+	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (coverArt) {
+			getCoverArtUrl(coverArt, 40).then(setCoverUrl);
+		}
+	}, [coverArt]);
+
+	return (
+		<div className="w-8 h-8 rounded overflow-hidden bg-muted flex-shrink-0 mr-2">
+			{coverUrl ? (
+				<img src={coverUrl} alt="" className="w-full h-full object-cover" />
+			) : (
+				<div className="w-full h-full flex items-center justify-center">
+					<Disc3 className="w-4 h-4 text-muted-foreground" />
+				</div>
+			)}
+		</div>
+	);
+}
+
+function SongCover({ coverArt }: { coverArt?: string }) {
+	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (coverArt) {
+			getCoverArtUrl(coverArt, 40).then(setCoverUrl);
+		}
+	}, [coverArt]);
+
+	return (
+		<div className="w-8 h-8 rounded overflow-hidden bg-muted flex-shrink-0 mr-2">
+			{coverUrl ? (
+				<img src={coverUrl} alt="" className="w-full h-full object-cover" />
+			) : (
+				<div className="w-full h-full flex items-center justify-center">
+					<Music className="w-4 h-4 text-muted-foreground" />
+				</div>
+			)}
+		</div>
+	);
+}
 
 export function GlobalSearch() {
 	const [open, setOpen] = useState(false);
@@ -152,7 +218,7 @@ export function GlobalSearch() {
 								value={`artist-${artist.id}-${artist.name}`}
 								onSelect={() => handleSelectArtist(artist)}
 							>
-								<User className="mr-2 h-4 w-4 text-muted-foreground" />
+								<ArtistCover artistId={artist.id} />
 								<span className="flex-1 truncate">{artist.name}</span>
 								{artist.albumCount !== undefined && (
 									<span className="text-xs text-muted-foreground">
@@ -177,7 +243,7 @@ export function GlobalSearch() {
 								value={`album-${album.id}-${album.name}`}
 								onSelect={() => handleSelectAlbum(album)}
 							>
-								<Disc3 className="mr-2 h-4 w-4 text-muted-foreground" />
+								<AlbumCover coverArt={album.coverArt} />
 								<div className="flex-1 min-w-0">
 									<span className="truncate block">{album.name}</span>
 									{album.artist && (
@@ -208,7 +274,7 @@ export function GlobalSearch() {
 								value={`song-${song.id}-${song.title}`}
 								onSelect={() => handleSelectSong(song)}
 							>
-								<Music className="mr-2 h-4 w-4 text-muted-foreground" />
+								<SongCover coverArt={song.coverArt} />
 								<div className="flex-1 min-w-0">
 									<span className="truncate block">{song.title}</span>
 									{song.artist && (
