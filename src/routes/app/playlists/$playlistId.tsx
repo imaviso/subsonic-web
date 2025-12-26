@@ -417,7 +417,7 @@ function PlaylistDetailPage() {
 								{updateMutation.isPending ? (
 									<Loader2 className="w-4 h-4 animate-spin" />
 								) : (
-									"Save"
+									<Check className="w-4 h-4" />
 								)}
 							</Button>
 							<Button
