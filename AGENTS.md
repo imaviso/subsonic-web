@@ -159,12 +159,6 @@ function AlbumsPage() {
 }
 ```
 
-## CORS Handling
-
-In development, a Vite plugin proxies requests to avoid CORS issues. The proxy intercepts `/subsonic-proxy/{encodedServerUrl}/rest/...` and forwards to the actual server.
-
-For production, the Subsonic server must have CORS enabled, or deploy behind a reverse proxy.
-
 ## Subsonic API Reference
 
 - API Docs: https://www.subsonic.org/pages/api.jsp

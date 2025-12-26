@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ListPlus, Loader2, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,12 +27,15 @@ interface AddToPlaylistButtonProps {
 		coverArt?: string;
 	};
 	size?: "sm" | "default";
+	/** Position the dropdown above the button (useful when button is at bottom of screen) */
+	dropdownPosition?: "bottom" | "top";
 }
 
 export function AddToPlaylistButton({
 	songId,
 	song,
 	size = "sm",
+	dropdownPosition = "bottom",
 }: AddToPlaylistButtonProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [showNewPlaylist, setShowNewPlaylist] = useState(false);
@@ -106,11 +110,14 @@ export function AddToPlaylistButton({
 				queryClient.setQueryData(["playlists"], context.previousPlaylists);
 			}
 			setAddedToPlaylist(null);
+			toast.error("Failed to add to playlist");
 		},
 		onSuccess: (_, playlistId) => {
 			// Refetch to ensure sync with server
 			queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
 			queryClient.invalidateQueries({ queryKey: ["playlists"] });
+			const playlist = playlists?.find((p) => p.id === playlistId);
+			toast.success(`Added to "${playlist?.name ?? "playlist"}"`);
 		},
 		onSettled: () => {
 			setTimeout(() => {
@@ -150,12 +157,14 @@ export function AddToPlaylistButton({
 			if (context?.previousPlaylists) {
 				queryClient.setQueryData(["playlists"], context.previousPlaylists);
 			}
+			toast.error("Failed to create playlist");
 		},
-		onSuccess: () => {
+		onSuccess: (_data, name) => {
 			queryClient.invalidateQueries({ queryKey: ["playlists"] });
 			setNewPlaylistName("");
 			setShowNewPlaylist(false);
 			setIsOpen(false);
+			toast.success(`Created playlist "${name}"`);
 		},
 	});
 
@@ -200,7 +209,12 @@ export function AddToPlaylistButton({
 			</Button>
 
 			{isOpen && (
-				<div className="absolute right-0 top-full mt-1 z-50 w-56 bg-popover border rounded-md shadow-lg py-1">
+				<div
+					className={cn(
+						"absolute right-0 z-50 w-56 bg-popover border rounded-md shadow-lg py-1",
+						dropdownPosition === "top" ? "bottom-full mb-1" : "top-full mt-1",
+					)}
+				>
 					<div className="px-3 py-2 border-b">
 						<p className="text-sm font-medium">Add to playlist</p>
 					</div>

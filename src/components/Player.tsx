@@ -359,6 +359,7 @@ export function Player() {
 						coverArt: currentTrack.coverArt,
 					}}
 					size="sm"
+					dropdownPosition="top"
 				/>
 				<Button
 					variant="ghost"

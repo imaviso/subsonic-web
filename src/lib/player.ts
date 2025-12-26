@@ -382,6 +382,25 @@ export function addToQueue(songs: Song[]) {
 	});
 }
 
+export function playNextInQueue(song: Song) {
+	const { queue, originalQueue, queueIndex } = playerState;
+	// Insert the song right after the current track
+	const newQueue = [
+		...queue.slice(0, queueIndex + 1),
+		song,
+		...queue.slice(queueIndex + 1),
+	];
+	const newOriginalQueue = [
+		...originalQueue.slice(0, queueIndex + 1),
+		song,
+		...originalQueue.slice(queueIndex + 1),
+	];
+	updateState({
+		queue: newQueue,
+		originalQueue: newOriginalQueue,
+	});
+}
+
 export function clearQueue() {
 	const audioEl = getAudio();
 	audioEl.pause();
@@ -567,6 +586,7 @@ export function usePlayer() {
 		seek,
 		setVolume,
 		addToQueue,
+		playNextInQueue,
 		clearQueue,
 		toggleShuffle,
 		toggleRepeat,

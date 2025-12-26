@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { Album } from "@/lib/api";
 import { getCoverArtUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { AlbumContextMenu } from "./AlbumContextMenu";
 import { StarButton } from "./StarButton";
 
 interface AlbumCardProps {
@@ -23,54 +24,56 @@ export function AlbumCard({ album, className }: AlbumCardProps) {
 	}, [album.coverArt]);
 
 	return (
-		<Link
-			to="/app/albums/$albumId"
-			params={{ albumId: album.id }}
-			className={cn(
-				"group block rounded-lg bg-card p-3 transition-colors hover:bg-accent",
-				className,
-			)}
-		>
-			{/* Album Cover */}
-			<div className="aspect-square rounded-md overflow-hidden bg-muted mb-3 relative">
-				{coverUrl && !imageError ? (
-					<img
-						src={coverUrl}
-						alt={album.name}
-						className="w-full h-full object-cover transition-transform group-hover:scale-105"
-						onError={() => setImageError(true)}
-					/>
-				) : (
-					<div className="w-full h-full flex items-center justify-center">
-						<Disc3 className="w-12 h-12 text-muted-foreground" />
+		<AlbumContextMenu album={album}>
+			<Link
+				to="/app/albums/$albumId"
+				params={{ albumId: album.id }}
+				className={cn(
+					"group block rounded-lg bg-card p-3 transition-colors hover:bg-accent",
+					className,
+				)}
+			>
+				{/* Album Cover */}
+				<div className="aspect-square rounded-md overflow-hidden bg-muted mb-3 relative">
+					{coverUrl && !imageError ? (
+						<img
+							src={coverUrl}
+							alt={album.name}
+							className="w-full h-full object-cover transition-transform group-hover:scale-105"
+							onError={() => setImageError(true)}
+						/>
+					) : (
+						<div className="w-full h-full flex items-center justify-center">
+							<Disc3 className="w-12 h-12 text-muted-foreground" />
+						</div>
+					)}
+					{/* Star button overlay */}
+					<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+						<StarButton
+							id={album.id}
+							type="album"
+							isStarred={!!album.starred}
+							size="sm"
+						/>
 					</div>
-				)}
-				{/* Star button overlay */}
-				<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-					<StarButton
-						id={album.id}
-						type="album"
-						isStarred={!!album.starred}
-						size="sm"
-					/>
 				</div>
-			</div>
 
-			{/* Album Info */}
-			<div className="space-y-1">
-				<h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary">
-					{album.name}
-				</h3>
-				{album.artist && (
-					<p className="text-xs text-muted-foreground truncate">
-						{album.artist}
-					</p>
-				)}
-				{album.year && (
-					<p className="text-xs text-muted-foreground">{album.year}</p>
-				)}
-			</div>
-		</Link>
+				{/* Album Info */}
+				<div className="space-y-1">
+					<h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary">
+						{album.name}
+					</h3>
+					{album.artist && (
+						<p className="text-xs text-muted-foreground truncate">
+							{album.artist}
+						</p>
+					)}
+					{album.year && (
+						<p className="text-xs text-muted-foreground">{album.year}</p>
+					)}
+				</div>
+			</Link>
+		</AlbumContextMenu>
 	);
 }
 

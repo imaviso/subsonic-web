@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
+import { toast } from "sonner";
 
 import type { Album, Artist, Song } from "@/lib/api";
 import { star, unstar } from "@/lib/api";
@@ -325,8 +326,20 @@ export function StarButton({
 
 			return {};
 		},
+		onSuccess: (_, shouldStar) => {
+			toast.success(
+				shouldStar ? "Added to favorites" : "Removed from favorites",
+			);
+		},
 		onError: (_err, _shouldStar, context) => {
 			if (!context) return;
+
+			// Show error toast
+			toast.error(
+				_shouldStar
+					? "Failed to add to favorites"
+					: "Failed to remove from favorites",
+			);
 
 			// Revert album cache updates
 			if (type === "album") {

@@ -12,6 +12,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { PlaylistSongList } from "@/components/PlaylistSongList";
 import { Button } from "@/components/ui/button";
@@ -59,10 +60,14 @@ function PlaylistDetailPage() {
 
 	const updateMutation = useMutation({
 		mutationFn: (name: string) => updatePlaylist({ playlistId, name }),
-		onSuccess: () => {
+		onSuccess: (_data, name) => {
 			queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
 			queryClient.invalidateQueries({ queryKey: ["playlists"] });
 			setIsEditing(false);
+			toast.success(`Renamed to "${name}"`);
+		},
+		onError: () => {
+			toast.error("Failed to rename playlist");
 		},
 	});
 
@@ -71,6 +76,10 @@ function PlaylistDetailPage() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["playlists"] });
 			navigate({ to: "/app/playlists" });
+			toast.success("Playlist deleted");
+		},
+		onError: () => {
+			toast.error("Failed to delete playlist");
 		},
 	});
 

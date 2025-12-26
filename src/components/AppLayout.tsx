@@ -34,6 +34,7 @@ import {
 	SidebarTrigger,
 	useSidebar,
 } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/auth";
 import {
 	enableQueueSync,
@@ -253,6 +254,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 		<SidebarProvider>
 			<AppSidebar />
 			<AppContent>{children}</AppContent>
+			<Toaster position="top-center" />
 		</SidebarProvider>
 	);
 }

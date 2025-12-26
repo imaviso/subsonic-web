@@ -8,12 +8,14 @@ import {
 	Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import type { PlaylistWithSongs, Song } from "@/lib/api";
 import { getCoverArtUrl, updatePlaylist } from "@/lib/api";
 import { playSong, usePlayer } from "@/lib/player";
 import { cn } from "@/lib/utils";
 import { AddToPlaylistButton } from "./AddToPlaylistButton";
+import { SongContextMenu } from "./SongContextMenu";
 import { StarButton } from "./StarButton";
 
 function formatDuration(seconds: number): string {
@@ -68,148 +70,150 @@ function PlaylistSongRow({
 	};
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: Using div for drag-and-drop grid layout
-		<div
-			role="listitem"
-			draggable
-			onDragStart={(e) => {
-				e.dataTransfer.effectAllowed = "move";
-				onDragStart(index);
-			}}
-			onDragOver={(e) => {
-				e.preventDefault();
-				onDragOver(index);
-			}}
-			onDragEnd={onDragEnd}
-			className={cn(
-				"w-full grid gap-4 px-4 py-2 hover:bg-muted/50 transition-colors group",
-				"grid-cols-[auto_auto_1fr_1fr_auto_auto_auto_auto]",
-				isCurrentTrack && "bg-muted/30",
-				isDragging && "opacity-50",
-				dragOverIndex === index && "border-t-2 border-primary",
-			)}
-		>
-			{/* Drag handle */}
-			<div className="flex items-center cursor-grab active:cursor-grabbing">
-				<GripVertical className="w-4 h-4 text-muted-foreground" />
-			</div>
-
-			{/* Play indicator / track number */}
-			<button
-				type="button"
-				onClick={handlePlay}
-				className="w-8 flex items-center justify-center"
-			>
-				{isThisTrackPlaying ? (
-					<span className="w-3 h-3 flex gap-0.5 items-end">
-						<span className="w-0.5 h-2 bg-primary animate-pulse" />
-						<span
-							className="w-0.5 h-3 bg-primary animate-pulse"
-							style={{ animationDelay: "0.2s" }}
-						/>
-						<span
-							className="w-0.5 h-1.5 bg-primary animate-pulse"
-							style={{ animationDelay: "0.4s" }}
-						/>
-					</span>
-				) : (
-					<>
-						<span
-							className={cn(
-								"text-sm group-hover:hidden",
-								isCurrentTrack ? "text-primary" : "text-muted-foreground",
-							)}
-						>
-							{index + 1}
-						</span>
-						<Play
-							className={cn(
-								"w-4 h-4 hidden group-hover:block",
-								isCurrentTrack ? "text-primary" : "text-foreground",
-							)}
-						/>
-					</>
+		<SongContextMenu song={song} songs={songs} index={index}>
+			{/* biome-ignore lint/a11y/useSemanticElements: Using div for drag-and-drop grid layout */}
+			<div
+				role="listitem"
+				draggable
+				onDragStart={(e) => {
+					e.dataTransfer.effectAllowed = "move";
+					onDragStart(index);
+				}}
+				onDragOver={(e) => {
+					e.preventDefault();
+					onDragOver(index);
+				}}
+				onDragEnd={onDragEnd}
+				className={cn(
+					"w-full grid gap-4 px-4 py-2 hover:bg-muted/50 transition-colors group",
+					"grid-cols-[auto_auto_1fr_1fr_auto_auto_auto_auto]",
+					isCurrentTrack && "bg-muted/30",
+					isDragging && "opacity-50",
+					dragOverIndex === index && "border-t-2 border-primary",
 				)}
-			</button>
-
-			{/* Song info */}
-			<button
-				type="button"
-				onClick={handlePlay}
-				className="flex items-center gap-3 min-w-0 text-left"
 			>
-				{coverUrl ? (
-					<img
-						src={coverUrl}
-						alt={song.title}
-						className="w-10 h-10 rounded object-cover flex-shrink-0"
-					/>
-				) : (
-					<div className="w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0">
-						<Music className="w-4 h-4 text-muted-foreground" />
-					</div>
-				)}
-				<div className="min-w-0">
-					<p
-						className={cn(
-							"font-medium text-sm truncate",
-							isCurrentTrack ? "text-primary" : "text-foreground",
-						)}
-					>
-						{song.title}
-					</p>
-					{song.artist && (
-						<p className="text-xs text-muted-foreground truncate">
-							{song.artist}
-						</p>
-					)}
+				{/* Drag handle */}
+				<div className="flex items-center cursor-grab active:cursor-grabbing">
+					<GripVertical className="w-4 h-4 text-muted-foreground" />
 				</div>
-			</button>
 
-			{/* Album */}
-			<div className="hidden sm:flex items-center min-w-0">
-				<p className="text-sm text-muted-foreground truncate">{song.album}</p>
-			</div>
-
-			{/* Star button */}
-			<div className="flex items-center">
-				<StarButton
-					id={song.id}
-					type="song"
-					isStarred={!!song.starred}
-					size="sm"
-				/>
-			</div>
-
-			{/* Add to playlist */}
-			<div className="flex items-center">
-				<AddToPlaylistButton songId={song.id} song={song} size="sm" />
-			</div>
-
-			{/* Remove from playlist */}
-			<div className="flex items-center">
+				{/* Play indicator / track number */}
 				<button
 					type="button"
-					onClick={() => onRemove(index)}
-					disabled={isRemoving}
-					className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-					title="Remove from playlist"
+					onClick={handlePlay}
+					className="w-8 flex items-center justify-center"
 				>
-					{isRemoving ? (
-						<Loader2 className="w-4 h-4 animate-spin" />
+					{isThisTrackPlaying ? (
+						<span className="w-3 h-3 flex gap-0.5 items-end">
+							<span className="w-0.5 h-2 bg-primary animate-pulse" />
+							<span
+								className="w-0.5 h-3 bg-primary animate-pulse"
+								style={{ animationDelay: "0.2s" }}
+							/>
+							<span
+								className="w-0.5 h-1.5 bg-primary animate-pulse"
+								style={{ animationDelay: "0.4s" }}
+							/>
+						</span>
 					) : (
-						<Trash2 className="w-4 h-4" />
+						<>
+							<span
+								className={cn(
+									"text-sm group-hover:hidden",
+									isCurrentTrack ? "text-primary" : "text-muted-foreground",
+								)}
+							>
+								{index + 1}
+							</span>
+							<Play
+								className={cn(
+									"w-4 h-4 hidden group-hover:block",
+									isCurrentTrack ? "text-primary" : "text-foreground",
+								)}
+							/>
+						</>
 					)}
 				</button>
-			</div>
 
-			{/* Duration */}
-			<div className="flex items-center">
-				<span className="text-sm text-muted-foreground">
-					{song.duration ? formatDuration(song.duration) : "—"}
-				</span>
+				{/* Song info */}
+				<button
+					type="button"
+					onClick={handlePlay}
+					className="flex items-center gap-3 min-w-0 text-left"
+				>
+					{coverUrl ? (
+						<img
+							src={coverUrl}
+							alt={song.title}
+							className="w-10 h-10 rounded object-cover flex-shrink-0"
+						/>
+					) : (
+						<div className="w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0">
+							<Music className="w-4 h-4 text-muted-foreground" />
+						</div>
+					)}
+					<div className="min-w-0">
+						<p
+							className={cn(
+								"font-medium text-sm truncate",
+								isCurrentTrack ? "text-primary" : "text-foreground",
+							)}
+						>
+							{song.title}
+						</p>
+						{song.artist && (
+							<p className="text-xs text-muted-foreground truncate">
+								{song.artist}
+							</p>
+						)}
+					</div>
+				</button>
+
+				{/* Album */}
+				<div className="hidden sm:flex items-center min-w-0">
+					<p className="text-sm text-muted-foreground truncate">{song.album}</p>
+				</div>
+
+				{/* Star button */}
+				<div className="flex items-center">
+					<StarButton
+						id={song.id}
+						type="song"
+						isStarred={!!song.starred}
+						size="sm"
+					/>
+				</div>
+
+				{/* Add to playlist */}
+				<div className="flex items-center">
+					<AddToPlaylistButton songId={song.id} song={song} size="sm" />
+				</div>
+
+				{/* Remove from playlist */}
+				<div className="flex items-center">
+					<button
+						type="button"
+						onClick={() => onRemove(index)}
+						disabled={isRemoving}
+						className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+						title="Remove from playlist"
+					>
+						{isRemoving ? (
+							<Loader2 className="w-4 h-4 animate-spin" />
+						) : (
+							<Trash2 className="w-4 h-4" />
+						)}
+					</button>
+				</div>
+
+				{/* Duration */}
+				<div className="flex items-center">
+					<span className="text-sm text-muted-foreground">
+						{song.duration ? formatDuration(song.duration) : "—"}
+					</span>
+				</div>
 			</div>
-		</div>
+		</SongContextMenu>
 	);
 }
 
@@ -255,10 +259,12 @@ export function PlaylistSongList({ playlistId, songs }: PlaylistSongListProps) {
 					context.previousPlaylist,
 				);
 			}
+			toast.error("Failed to remove song from playlist");
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
 			queryClient.invalidateQueries({ queryKey: ["playlists"] });
+			toast.success("Removed from playlist");
 		},
 		onSettled: () => {
 			setRemovingIndex(null);
@@ -358,6 +364,7 @@ export function PlaylistSongList({ playlistId, songs }: PlaylistSongListProps) {
 					context.previousPlaylist,
 				);
 			}
+			toast.error("Failed to reorder playlist");
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });

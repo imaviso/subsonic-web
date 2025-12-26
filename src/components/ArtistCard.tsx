@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { Artist } from "@/lib/api";
 import { getCoverArtUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { ArtistContextMenu } from "./ArtistContextMenu";
 import { StarButton } from "./StarButton";
 
 interface ArtistCardProps {
@@ -23,51 +24,53 @@ export function ArtistCard({ artist, className }: ArtistCardProps) {
 	}, [artist.coverArt]);
 
 	return (
-		<Link
-			to="/app/artists/$artistId"
-			params={{ artistId: artist.id }}
-			className={cn(
-				"group block rounded-lg bg-card p-3 transition-colors hover:bg-accent",
-				className,
-			)}
-		>
-			{/* Artist Image */}
-			<div className="aspect-square rounded-full overflow-hidden bg-muted mb-3 relative">
-				{coverUrl && !imageError ? (
-					<img
-						src={coverUrl}
-						alt={artist.name}
-						className="w-full h-full object-cover transition-transform group-hover:scale-105"
-						onError={() => setImageError(true)}
-					/>
-				) : (
-					<div className="w-full h-full flex items-center justify-center">
-						<User className="w-12 h-12 text-muted-foreground" />
+		<ArtistContextMenu artist={artist}>
+			<Link
+				to="/app/artists/$artistId"
+				params={{ artistId: artist.id }}
+				className={cn(
+					"group block rounded-lg bg-card p-3 transition-colors hover:bg-accent",
+					className,
+				)}
+			>
+				{/* Artist Image */}
+				<div className="aspect-square rounded-full overflow-hidden bg-muted mb-3 relative">
+					{coverUrl && !imageError ? (
+						<img
+							src={coverUrl}
+							alt={artist.name}
+							className="w-full h-full object-cover transition-transform group-hover:scale-105"
+							onError={() => setImageError(true)}
+						/>
+					) : (
+						<div className="w-full h-full flex items-center justify-center">
+							<User className="w-12 h-12 text-muted-foreground" />
+						</div>
+					)}
+					{/* Star button overlay */}
+					<div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+						<StarButton
+							id={artist.id}
+							type="artist"
+							isStarred={!!artist.starred}
+							size="sm"
+						/>
 					</div>
-				)}
-				{/* Star button overlay */}
-				<div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-					<StarButton
-						id={artist.id}
-						type="artist"
-						isStarred={!!artist.starred}
-						size="sm"
-					/>
 				</div>
-			</div>
 
-			{/* Artist Info */}
-			<div className="text-center">
-				<h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary">
-					{artist.name}
-				</h3>
-				{artist.albumCount !== undefined && (
-					<p className="text-xs text-muted-foreground">
-						{artist.albumCount} album{artist.albumCount !== 1 ? "s" : ""}
-					</p>
-				)}
-			</div>
-		</Link>
+				{/* Artist Info */}
+				<div className="text-center">
+					<h3 className="font-medium text-sm text-foreground truncate group-hover:text-primary">
+						{artist.name}
+					</h3>
+					{artist.albumCount !== undefined && (
+						<p className="text-xs text-muted-foreground">
+							{artist.albumCount} album{artist.albumCount !== 1 ? "s" : ""}
+						</p>
+					)}
+				</div>
+			</Link>
+		</ArtistContextMenu>
 	);
 }
 
