@@ -21,4 +21,13 @@ export default defineConfig({
 			"@": fileURLToPath(new URL("./src", import.meta.url)),
 		},
 	},
+	// Tauri expects a fixed port
+	server: {
+		port: 3000,
+		strictPort: true,
+	},
+	// Clear the screen on each rebuild
+	clearScreen: false,
+	// Tauri env variables
+	envPrefix: ["VITE_", "TAURI_"],
 });
