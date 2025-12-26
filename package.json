@@ -78,6 +78,7 @@
     "cmdk": "^1.1.1",
     "lucide-react": "^0.562.0",
     "next-themes": "^0.4.6",
+    "node-mpv": "github:jeffvli/Node-MPV#32b4d64395289ad710c41d481d2707a7acfc228f",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "sonner": "^2.0.7",

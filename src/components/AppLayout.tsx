@@ -10,6 +10,7 @@ import {
 	Moon,
 	Music,
 	Search,
+	Settings,
 	Sun,
 	Tags,
 	Users,
@@ -58,6 +59,7 @@ const navItems = [
 	{ to: "/app/playlists", icon: ListMusic, label: "Playlists" },
 	{ to: "/app/genres", icon: Tags, label: "Genres" },
 	{ to: "/app/songs", icon: Music, label: "Songs" },
+	{ to: "/app/settings", icon: Settings, label: "Settings" },
 ];
 
 function AppSidebar() {

@@ -861,26 +861,35 @@ export function Player() {
 				>
 					<ListMusic className="w-4 h-4" />
 				</Button>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="w-8 h-8"
-					onClick={toggleMute}
+				<div
+					className="flex items-center gap-1"
+					onWheel={(e) => {
+						e.preventDefault();
+						const delta = e.deltaY > 0 ? -0.05 : 0.05;
+						setVolume(Math.max(0, Math.min(1, volume + delta)));
+					}}
 				>
-					{volume === 0 ? (
-						<VolumeX className="w-4 h-4" />
-					) : (
-						<Volume2 className="w-4 h-4" />
-					)}
-				</Button>
-				<Slider
-					value={[volume]}
-					min={0}
-					max={1}
-					step={0.01}
-					onValueChange={(value) => setVolume(value[0])}
-					className="w-24"
-				/>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="w-8 h-8"
+						onClick={toggleMute}
+					>
+						{volume === 0 ? (
+							<VolumeX className="w-4 h-4" />
+						) : (
+							<Volume2 className="w-4 h-4" />
+						)}
+					</Button>
+					<Slider
+						value={[volume]}
+						min={0}
+						max={1}
+						step={0.01}
+						onValueChange={(value) => setVolume(value[0])}
+						className="w-24"
+					/>
+				</div>
 			</div>
 		</div>
 	);

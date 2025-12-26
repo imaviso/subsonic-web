@@ -13,6 +13,7 @@ import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppSongsRouteImport } from './routes/app/songs'
+import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppSearchRouteImport } from './routes/app/search'
 import { Route as AppPlaylistsIndexRouteImport } from './routes/app/playlists/index'
 import { Route as AppGenresIndexRouteImport } from './routes/app/genres/index'
@@ -41,6 +42,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppSongsRoute = AppSongsRouteImport.update({
   id: '/songs',
   path: '/songs',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppSearchRoute = AppSearchRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/app/search': typeof AppSearchRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/songs': typeof AppSongsRoute
   '/app/': typeof AppIndexRoute
   '/app/albums/$albumId': typeof AppAlbumsAlbumIdRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app/search': typeof AppSearchRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/songs': typeof AppSongsRoute
   '/app': typeof AppIndexRoute
   '/app/albums/$albumId': typeof AppAlbumsAlbumIdRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/app/search': typeof AppSearchRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/songs': typeof AppSongsRoute
   '/app/': typeof AppIndexRoute
   '/app/albums/$albumId': typeof AppAlbumsAlbumIdRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/app/search'
+    | '/app/settings'
     | '/app/songs'
     | '/app/'
     | '/app/albums/$albumId'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app/search'
+    | '/app/settings'
     | '/app/songs'
     | '/app'
     | '/app/albums/$albumId'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/app/search'
+    | '/app/settings'
     | '/app/songs'
     | '/app/'
     | '/app/albums/$albumId'
@@ -214,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/songs'
       fullPath: '/app/songs'
       preLoaderRoute: typeof AppSongsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/app/search': {
@@ -284,6 +303,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteRouteChildren {
   AppSearchRoute: typeof AppSearchRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppSongsRoute: typeof AppSongsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAlbumsAlbumIdRoute: typeof AppAlbumsAlbumIdRoute
@@ -298,6 +318,7 @@ interface AppRouteRouteChildren {
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSearchRoute: AppSearchRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppSongsRoute: AppSongsRoute,
   AppIndexRoute: AppIndexRoute,
   AppAlbumsAlbumIdRoute: AppAlbumsAlbumIdRoute,

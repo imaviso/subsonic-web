@@ -7,6 +7,232 @@ import {
 	savePlayQueue,
 	scrobble,
 } from "./api";
+import {
+	type AudioBackend,
+	type AudioBackendEvents,
+	Html5AudioBackend,
+	MpvAudioBackend,
+} from "./audio-backend";
+import { getSettings } from "./settings";
+
+// ============================================================================
+// Audio Backend Management
+// ============================================================================
+
+let currentBackend: AudioBackend | null = null;
+let currentBackendType: "html5" | "mpv" = "html5";
+
+function getBackendEventHandlers(): AudioBackendEvents {
+	return {
+		onTimeUpdate: (time: number, duration: number) => {
+			updateState({ currentTime: time, duration });
+
+			// Update media session position
+			if ("mediaSession" in navigator && duration > 0) {
+				navigator.mediaSession.setPositionState({
+					duration,
+					playbackRate: 1,
+					position: time,
+				});
+			}
+
+			// Scrobble logic
+			const currentTrack = playerState.currentTrack;
+			if (
+				currentTrack &&
+				currentTrack.id !== scrobbledTrackId &&
+				duration > 0
+			) {
+				const scrobbleThreshold = Math.min(240, duration * 0.5);
+				if (time >= scrobbleThreshold) {
+					scrobbledTrackId = currentTrack.id;
+					scrobble(currentTrack.id, { submission: true }).catch((err) => {
+						console.error("Failed to scrobble:", err);
+					});
+				}
+			}
+		},
+		onEnded: () => {
+			playNext();
+		},
+		onAutoNext: () => {
+			// MPV auto-advanced to next track in its playlist
+			// We need to advance our queue state to match
+			handleAutoNext();
+		},
+		onPlaying: () => {
+			updateState({ isPlaying: true, isLoading: false });
+			updateMediaSessionState(true);
+		},
+		onPaused: () => {
+			updateState({ isPlaying: false });
+			updateMediaSessionState(false);
+		},
+		onLoading: () => {
+			updateState({ isLoading: true });
+		},
+		onCanPlay: () => {
+			updateState({ isLoading: false });
+		},
+		onError: (error: Error) => {
+			console.error("Audio error:", error);
+			updateState({ isLoading: false, isPlaying: false });
+		},
+		onFallback: (shouldFallback: boolean) => {
+			// MPV failed, fall back to HTML5 audio
+			if (shouldFallback && currentBackendType === "mpv") {
+				console.warn("MPV failed, falling back to HTML5 audio");
+				switchToHtml5Fallback();
+			}
+		},
+	};
+}
+
+// Handle MPV auto-advancing to next track
+async function handleAutoNext() {
+	const { queue, queueIndex } = playerState;
+	const nextIndex = queueIndex + 1;
+
+	if (nextIndex < queue.length) {
+		const nextTrack = queue[nextIndex];
+
+		// Reset scrobble state for new song
+		scrobbledTrackId = null;
+
+		// Update state to reflect the new current track
+		updateState({
+			currentTrack: nextTrack,
+			queueIndex: nextIndex,
+			currentTime: 0,
+			isLoading: false,
+		});
+
+		// Update media session
+		updateMediaSession(nextTrack);
+
+		// Report "now playing"
+		if (nowPlayingReported !== nextTrack.id) {
+			nowPlayingReported = nextTrack.id;
+			scrobble(nextTrack.id, { submission: false }).catch((err) => {
+				console.error("Failed to report now playing:", err);
+			});
+		}
+
+		// Preload the next track after this one
+		const followingIndex = nextIndex + 1;
+		if (followingIndex < queue.length && currentBackend) {
+			const followingTrack = queue[followingIndex];
+			try {
+				const followingUrl = await getStreamUrl(followingTrack.id);
+				await currentBackend.setQueueNext(followingUrl);
+			} catch (err) {
+				console.error("Failed to preload next track:", err);
+			}
+		}
+
+		// Tell MPV about the next URL (for its internal queue management)
+		if (followingIndex < queue.length) {
+			const followingTrack = queue[followingIndex];
+			try {
+				const url = await getStreamUrl(followingTrack.id);
+				window.electronAPI?.mpv?.autoNext(url);
+			} catch {
+				window.electronAPI?.mpv?.autoNext();
+			}
+		} else {
+			window.electronAPI?.mpv?.autoNext();
+		}
+
+		// Trigger queue sync
+		debouncedSaveQueue();
+	}
+}
+
+// Fall back to HTML5 audio when MPV fails
+function switchToHtml5Fallback() {
+	const wasPlaying = playerState.isPlaying;
+	const currentTrack = playerState.currentTrack;
+	const currentTime = playerState.currentTime;
+
+	// Destroy current backend
+	if (currentBackend) {
+		currentBackend.destroy();
+		currentBackend = null;
+	}
+
+	// Create HTML5 backend
+	currentBackend = new Html5AudioBackend();
+	currentBackendType = "html5";
+	currentBackend.setVolume(playerState.volume);
+	currentBackend.setEventHandlers(getBackendEventHandlers());
+
+	// Resume playback if we had a track
+	if (currentTrack && wasPlaying) {
+		playSong(currentTrack, playerState.queue, playerState.queueIndex).then(
+			() => {
+				seek(currentTime);
+			},
+		);
+	}
+}
+
+function getAudioBackend(): AudioBackend {
+	const settings = getSettings();
+	const desiredType = settings.audioBackend;
+
+	// Check if we need to switch backends
+	if (currentBackend && currentBackendType !== desiredType) {
+		currentBackend.destroy();
+		currentBackend = null;
+	}
+
+	if (!currentBackend) {
+		// For MPV, check if it's available (Electron only)
+		if (desiredType === "mpv" && window.electronAPI?.mpv) {
+			currentBackend = new MpvAudioBackend();
+			currentBackendType = "mpv";
+		} else {
+			currentBackend = new Html5AudioBackend();
+			currentBackendType = "html5";
+		}
+
+		currentBackend.setVolume(playerState.volume);
+		currentBackend.setEventHandlers(getBackendEventHandlers());
+	}
+
+	return currentBackend;
+}
+
+// Export function to switch backends at runtime
+export function switchAudioBackend(type: "html5" | "mpv"): void {
+	if (currentBackend && currentBackendType !== type) {
+		const wasPlaying = playerState.isPlaying;
+		const currentTime = playerState.currentTime;
+		const currentTrack = playerState.currentTrack;
+
+		// Stop current backend
+		currentBackend.stop();
+		currentBackend.destroy();
+		currentBackend = null;
+
+		// Create new backend
+		getAudioBackend();
+
+		// Resume playback if we had a track
+		if (currentTrack && wasPlaying) {
+			playSong(currentTrack, playerState.queue, playerState.queueIndex).then(
+				() => {
+					seek(currentTime);
+				},
+			);
+		}
+	}
+}
+
+// Export current backend type for UI
+export function getCurrentBackendType(): "html5" | "mpv" {
+	return currentBackendType;
+}
 
 // Media Session API support
 if ("mediaSession" in navigator) {
@@ -116,7 +342,6 @@ const initialState: PlayerState = {
 };
 
 let playerState: PlayerState = { ...initialState };
-let audio: HTMLAudioElement | null = null;
 const listeners = new Set<() => void>();
 
 // Track scrobbling state - we only scrobble once per song play
@@ -132,83 +357,6 @@ function emitChange() {
 function updateState(updates: Partial<PlayerState>) {
 	playerState = { ...playerState, ...updates };
 	emitChange();
-}
-
-// Initialize audio element
-function getAudio(): HTMLAudioElement {
-	if (!audio) {
-		audio = new Audio();
-		audio.volume = playerState.volume;
-
-		audio.addEventListener("timeupdate", () => {
-			updateState({ currentTime: audio?.currentTime ?? 0 });
-
-			// Update media session position
-			if ("mediaSession" in navigator) {
-				const currentTime = audio?.currentTime ?? 0;
-				const duration = audio?.duration ?? 0;
-				if (duration > 0) {
-					navigator.mediaSession.setPositionState({
-						duration,
-						playbackRate: audio?.playbackRate ?? 1,
-						position: currentTime,
-					});
-				}
-			}
-
-			// Check if we should scrobble (submission)
-			// Scrobble after 4 minutes or 50% of the song, whichever comes first
-			const currentTrack = playerState.currentTrack;
-			const currentTime = audio?.currentTime ?? 0;
-			const duration = audio?.duration ?? 0;
-
-			if (
-				currentTrack &&
-				currentTrack.id !== scrobbledTrackId &&
-				duration > 0
-			) {
-				const scrobbleThreshold = Math.min(240, duration * 0.5); // 4 min or 50%
-				if (currentTime >= scrobbleThreshold) {
-					scrobbledTrackId = currentTrack.id;
-					scrobble(currentTrack.id, { submission: true }).catch((err) => {
-						console.error("Failed to scrobble:", err);
-					});
-				}
-			}
-		});
-
-		audio.addEventListener("durationchange", () => {
-			updateState({ duration: audio?.duration ?? 0 });
-		});
-
-		audio.addEventListener("ended", () => {
-			playNext();
-		});
-
-		audio.addEventListener("playing", () => {
-			updateState({ isPlaying: true, isLoading: false });
-			updateMediaSessionState(true);
-		});
-
-		audio.addEventListener("pause", () => {
-			updateState({ isPlaying: false });
-			updateMediaSessionState(false);
-		});
-
-		audio.addEventListener("waiting", () => {
-			updateState({ isLoading: true });
-		});
-
-		audio.addEventListener("canplay", () => {
-			updateState({ isLoading: false });
-		});
-
-		audio.addEventListener("error", () => {
-			console.error("Audio error:", audio?.error);
-			updateState({ isLoading: false, isPlaying: false });
-		});
-	}
-	return audio;
 }
 
 // ============================================================================
@@ -248,12 +396,13 @@ export async function playSong(
 	queue?: Song[],
 	startIndex?: number,
 ) {
-	const audioEl = getAudio();
+	const backend = getAudioBackend();
 
 	// Reset scrobble state for new song
 	scrobbledTrackId = null;
 
 	const newQueue = queue ?? [song];
+	const currentIndex = startIndex ?? 0;
 	updateState({
 		currentTrack: song,
 		queue: newQueue,
@@ -261,7 +410,7 @@ export async function playSong(
 			playerState.originalQueue.length > 0
 				? playerState.originalQueue
 				: newQueue,
-		queueIndex: startIndex ?? 0,
+		queueIndex: currentIndex,
 		isLoading: true,
 	});
 
@@ -270,8 +419,15 @@ export async function playSong(
 
 	try {
 		const streamUrl = await getStreamUrl(song.id);
-		audioEl.src = streamUrl;
-		await audioEl.play();
+
+		// For MPV backend, use setQueue with next track for gapless playback
+		if (backend.name === "mpv" && currentIndex + 1 < newQueue.length) {
+			const nextTrack = newQueue[currentIndex + 1];
+			const nextUrl = await getStreamUrl(nextTrack.id);
+			await backend.setQueue(streamUrl, nextUrl, false);
+		} else {
+			await backend.play(streamUrl);
+		}
 
 		// Update media session metadata
 		updateMediaSession(song);
@@ -295,22 +451,21 @@ export async function playAlbum(songs: Song[], startIndex = 0) {
 }
 
 export function togglePlayPause() {
-	const audioEl = getAudio();
+	const backend = getAudioBackend();
 	if (playerState.isPlaying) {
-		audioEl.pause();
-	} else if (audioEl.src) {
-		audioEl.play();
+		backend.pause();
+	} else if (playerState.currentTrack) {
+		backend.resume();
 	}
 }
 
 export function pause() {
-	getAudio().pause();
+	getAudioBackend().pause();
 }
 
 export function play() {
-	const audioEl = getAudio();
-	if (audioEl.src) {
-		audioEl.play();
+	if (playerState.currentTrack) {
+		getAudioBackend().resume();
 	}
 }
 
@@ -321,7 +476,7 @@ export async function playNext() {
 	// Repeat one: replay current track
 	if (repeat === "one" && currentTrack) {
 		seek(0);
-		getAudio().play();
+		getAudioBackend().resume();
 		return;
 	}
 
@@ -334,7 +489,7 @@ export async function playNext() {
 	} else {
 		// End of queue
 		updateState({ isPlaying: false });
-		getAudio().pause();
+		getAudioBackend().pause();
 	}
 }
 
@@ -361,18 +516,16 @@ export async function playPrevious() {
 }
 
 export function seek(time: number) {
-	const audioEl = getAudio();
-	if (audioEl.src) {
-		// Update state immediately for smooth UI
-		updateState({ currentTime: time });
-		audioEl.currentTime = time;
-	}
+	const backend = getAudioBackend();
+	// Update state immediately for smooth UI
+	updateState({ currentTime: time });
+	backend.seek(time);
 }
 
 export function setVolume(volume: number) {
-	const audioEl = getAudio();
+	const backend = getAudioBackend();
 	const clampedVolume = Math.max(0, Math.min(1, volume));
-	audioEl.volume = clampedVolume;
+	backend.setVolume(clampedVolume);
 	updateState({ volume: clampedVolume });
 	saveVolumeToStorage(clampedVolume);
 }
@@ -427,10 +580,9 @@ export function clearQueue(): {
 		return previousState;
 	}
 	// Otherwise completely clear the queue
-	const audioEl = getAudio();
-	audioEl.pause();
-	audioEl.src = "";
-	updateState({ ...initialState });
+	const backend = getAudioBackend();
+	backend.stop();
+	updateState({ ...initialState, volume: playerState.volume });
 	return previousState;
 }
 
@@ -627,11 +779,18 @@ export async function restoreQueue(): Promise<boolean> {
 			currentTime: positionMs / 1000, // Convert from milliseconds
 		});
 
-		// Prepare audio element but don't play
-		const audioEl = getAudio();
-		const streamUrl = await getStreamUrl(songs[currentIndex].id);
-		audioEl.src = streamUrl;
-		audioEl.currentTime = positionMs / 1000;
+		// Prepare audio backend but don't play
+		// For HTML5, we need to load the source
+		const backend = getAudioBackend();
+		if (backend.name === "html5") {
+			const streamUrl = await getStreamUrl(songs[currentIndex].id);
+			// For HTML5, we need to access the underlying audio element
+			// This is a bit of a hack, but necessary for restoring position
+			const html5Backend = backend as InstanceType<typeof Html5AudioBackend>;
+			await html5Backend.play(streamUrl);
+			html5Backend.pause();
+			backend.seek(positionMs / 1000);
+		}
 
 		// Update media session
 		updateMediaSession(songs[currentIndex]);
