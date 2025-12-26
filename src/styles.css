@@ -195,6 +195,29 @@ code {
   navigation: auto;
 }
 
+/* Default click position (center of screen) */
+:root {
+  --click-x: 50vw;
+  --click-y: 50vh;
+}
+
+/* Theme transition - disable default animations, we use JS for circle animation */
+html[data-theme-transition] {
+  &::view-transition-old(root),
+  &::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  &::view-transition-new(root) {
+    z-index: 1;
+  }
+
+  &::view-transition-old(root) {
+    z-index: -1;
+  }
+}
+
 /* Only animate the main content area */
 ::view-transition-old(main-content) {
   animation: none;
@@ -202,7 +225,8 @@ code {
 }
 
 ::view-transition-new(main-content) {
-  animation: fade-in 150ms ease-out;
+  animation: scale-fade-in 250ms ease-out;
+  transform-origin: var(--click-x) var(--click-y);
 }
 
 /* Keep sidebar, player, and header static during transitions */
@@ -221,12 +245,14 @@ code {
   animation: none;
 }
 
-@keyframes fade-in {
+@keyframes scale-fade-in {
   from {
     opacity: 0;
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 

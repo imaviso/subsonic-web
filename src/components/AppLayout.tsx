@@ -229,6 +229,18 @@ function AppContent({ children }: { children: React.ReactNode }) {
 		}
 	}, []);
 
+	// Track click position for view transition origin
+	useEffect(() => {
+		const handleClick = (e: MouseEvent) => {
+			// Store click position as CSS custom properties
+			document.documentElement.style.setProperty("--click-x", `${e.clientX}px`);
+			document.documentElement.style.setProperty("--click-y", `${e.clientY}px`);
+		};
+
+		document.addEventListener("click", handleClick);
+		return () => document.removeEventListener("click", handleClick);
+	}, []);
+
 	return (
 		<SidebarInset className="h-svh flex flex-col">
 			{/* Mobile header */}
