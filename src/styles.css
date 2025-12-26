@@ -197,11 +197,12 @@ code {
 
 /* Only animate the main content area */
 ::view-transition-old(main-content) {
-  animation: fade-out 150ms ease-out;
+  animation: none;
+  opacity: 0;
 }
 
 ::view-transition-new(main-content) {
-  animation: fade-in 150ms ease-in;
+  animation: fade-in 150ms ease-out;
 }
 
 /* Keep sidebar, player, and header static during transitions */
@@ -218,15 +219,6 @@ code {
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
-}
-
-@keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
 }
 
 @keyframes fade-in {
