@@ -17,19 +17,25 @@ import type { Album, Artist, Song } from "@/lib/api";
 import { getCoverArtUrl, search } from "@/lib/api";
 import { playSong } from "@/lib/player";
 
-function ArtistCover({ artistId }: { artistId: string }) {
+function ArtistCover({ coverArt }: { coverArt?: string }) {
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+	const [imageError, setImageError] = useState(false);
 
 	useEffect(() => {
-		getCoverArtUrl(`ar-${artistId}`, 40)
-			.then(setCoverUrl)
-			.catch(() => {});
-	}, [artistId]);
+		if (coverArt) {
+			getCoverArtUrl(coverArt, 40).then(setCoverUrl);
+		}
+	}, [coverArt]);
 
 	return (
 		<div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0 mr-2">
-			{coverUrl ? (
-				<img src={coverUrl} alt="" className="w-full h-full object-cover" />
+			{coverUrl && !imageError ? (
+				<img
+					src={coverUrl}
+					alt=""
+					className="w-full h-full object-cover"
+					onError={() => setImageError(true)}
+				/>
 			) : (
 				<div className="w-full h-full flex items-center justify-center">
 					<User className="w-4 h-4 text-muted-foreground" />
@@ -41,6 +47,7 @@ function ArtistCover({ artistId }: { artistId: string }) {
 
 function AlbumCover({ coverArt }: { coverArt?: string }) {
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+	const [imageError, setImageError] = useState(false);
 
 	useEffect(() => {
 		if (coverArt) {
@@ -50,8 +57,13 @@ function AlbumCover({ coverArt }: { coverArt?: string }) {
 
 	return (
 		<div className="w-8 h-8 rounded overflow-hidden bg-muted flex-shrink-0 mr-2">
-			{coverUrl ? (
-				<img src={coverUrl} alt="" className="w-full h-full object-cover" />
+			{coverUrl && !imageError ? (
+				<img
+					src={coverUrl}
+					alt=""
+					className="w-full h-full object-cover"
+					onError={() => setImageError(true)}
+				/>
 			) : (
 				<div className="w-full h-full flex items-center justify-center">
 					<Disc3 className="w-4 h-4 text-muted-foreground" />
@@ -63,6 +75,7 @@ function AlbumCover({ coverArt }: { coverArt?: string }) {
 
 function SongCover({ coverArt }: { coverArt?: string }) {
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+	const [imageError, setImageError] = useState(false);
 
 	useEffect(() => {
 		if (coverArt) {
@@ -72,8 +85,13 @@ function SongCover({ coverArt }: { coverArt?: string }) {
 
 	return (
 		<div className="w-8 h-8 rounded overflow-hidden bg-muted flex-shrink-0 mr-2">
-			{coverUrl ? (
-				<img src={coverUrl} alt="" className="w-full h-full object-cover" />
+			{coverUrl && !imageError ? (
+				<img
+					src={coverUrl}
+					alt=""
+					className="w-full h-full object-cover"
+					onError={() => setImageError(true)}
+				/>
 			) : (
 				<div className="w-full h-full flex items-center justify-center">
 					<Music className="w-4 h-4 text-muted-foreground" />
@@ -218,7 +236,7 @@ export function GlobalSearch() {
 								value={`artist-${artist.id}-${artist.name}`}
 								onSelect={() => handleSelectArtist(artist)}
 							>
-								<ArtistCover artistId={artist.id} />
+								<ArtistCover coverArt={artist.coverArt} />
 								<span className="flex-1 truncate">{artist.name}</span>
 								{artist.albumCount !== undefined && (
 									<span className="text-xs text-muted-foreground">
