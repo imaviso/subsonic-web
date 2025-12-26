@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import type { Album, Artist, Song } from "@/lib/api";
 import { star, unstar } from "@/lib/api";
+import { updateCurrentTrackStarred } from "@/lib/player";
 import { cn } from "@/lib/utils";
 
 interface StarButtonProps {
@@ -213,6 +214,9 @@ export function StarButton({
 				await queryClient.cancelQueries({ queryKey: ["starred"] });
 				await queryClient.cancelQueries({ queryKey: ["randomSongs"] });
 
+				// Update player state if this song is currently playing
+				updateCurrentTrackStarred(shouldStar);
+
 				// Update starred cache
 				const previousStarred = queryClient.getQueryData<{
 					albums: Album[];
@@ -382,6 +386,9 @@ export function StarButton({
 
 			// Revert song cache updates
 			if (type === "song") {
+				// Revert player state
+				updateCurrentTrackStarred(!_shouldStar);
+
 				if ("previousStarred" in context) {
 					queryClient.setQueryData(["starred"], context.previousStarred);
 				}
