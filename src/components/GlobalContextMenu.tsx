@@ -84,8 +84,8 @@ export function GlobalContextMenu({ children }: GlobalContextMenuProps) {
 
 	return (
 		<ContextMenu>
-			<ContextMenuTrigger className="flex min-h-svh w-full">
-				{children}
+			<ContextMenuTrigger asChild>
+				<div className="flex min-h-svh w-full flex-col">{children}</div>
 			</ContextMenuTrigger>
 			<ContextMenuContent className="w-64">
 				<ContextMenuItem onClick={handleOpenSearch}>
