@@ -51,6 +51,7 @@ function PlaylistSongRow({
 }: PlaylistSongRowProps) {
 	const { currentTrack, isPlaying, togglePlayPause } = usePlayer();
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+	const [imageLoaded, setImageLoaded] = useState(false);
 
 	const isCurrentTrack = song.id === currentTrack?.id;
 	const isThisTrackPlaying = isCurrentTrack && isPlaying;
@@ -145,7 +146,11 @@ function PlaylistSongRow({
 						<img
 							src={coverUrl}
 							alt={song.title}
-							className="w-10 h-10 rounded object-cover flex-shrink-0"
+							className={cn(
+								"w-10 h-10 rounded object-cover flex-shrink-0 transition-opacity duration-200",
+								imageLoaded ? "opacity-100" : "opacity-0",
+							)}
+							onLoad={() => setImageLoaded(true)}
 						/>
 					) : (
 						<div className="w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0">

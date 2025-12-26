@@ -67,6 +67,7 @@ export function Player() {
 	} = usePlayer();
 
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+	const [coverLoaded, setCoverLoaded] = useState(false);
 	const [isSeeking, setIsSeeking] = useState(false);
 	const [seekValue, setSeekValue] = useState(0);
 	const [prevVolume, setPrevVolume] = useState(1);
@@ -112,6 +113,7 @@ export function Player() {
 	});
 
 	useEffect(() => {
+		setCoverLoaded(false);
 		if (currentTrack?.coverArt) {
 			getTrackCoverUrl(currentTrack.coverArt, 100).then(setCoverUrl);
 		} else {
@@ -249,7 +251,11 @@ export function Player() {
 						<img
 							src={coverUrl}
 							alt={currentTrack.title}
-							className="w-full h-full object-cover"
+							className={cn(
+								"w-full h-full object-cover transition-opacity duration-200",
+								coverLoaded ? "opacity-100" : "opacity-0",
+							)}
+							onLoad={() => setCoverLoaded(true)}
 						/>
 					) : (
 						<div className="w-full h-full flex items-center justify-center">

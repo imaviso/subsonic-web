@@ -16,6 +16,7 @@ interface ArtistCardProps {
 export function ArtistCard({ artist, className }: ArtistCardProps) {
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
 	const [imageError, setImageError] = useState(false);
+	const [imageLoaded, setImageLoaded] = useState(false);
 
 	useEffect(() => {
 		if (artist.coverArt) {
@@ -39,7 +40,11 @@ export function ArtistCard({ artist, className }: ArtistCardProps) {
 						<img
 							src={coverUrl}
 							alt={artist.name}
-							className="w-full h-full object-cover transition-transform group-hover:scale-105"
+							className={cn(
+								"w-full h-full object-cover transition-all duration-200 group-hover:scale-105",
+								imageLoaded ? "opacity-100" : "opacity-0",
+							)}
+							onLoad={() => setImageLoaded(true)}
 							onError={() => setImageError(true)}
 						/>
 					) : (

@@ -25,6 +25,7 @@ import {
 	getPlaylists,
 	type Playlist,
 } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 const createPlaylistSchema = v.object({
 	name: v.pipe(
@@ -54,6 +55,7 @@ interface PlaylistCardProps {
 
 function PlaylistCard({ playlist }: PlaylistCardProps) {
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+	const [imageLoaded, setImageLoaded] = useState(false);
 	const cardRef = React.useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -93,7 +95,11 @@ function PlaylistCard({ playlist }: PlaylistCardProps) {
 							<img
 								src={coverUrl}
 								alt={playlist.name}
-								className="w-full h-full object-cover"
+								className={cn(
+									"w-full h-full object-cover transition-opacity duration-200",
+									imageLoaded ? "opacity-100" : "opacity-0",
+								)}
+								onLoad={() => setImageLoaded(true)}
 							/>
 						) : (
 							<div className="w-full h-full flex items-center justify-center">

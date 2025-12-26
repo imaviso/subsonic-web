@@ -129,6 +129,7 @@ function PlaylistDetailPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
+	const [coverLoaded, setCoverLoaded] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
 	const [editName, setEditName] = useState("");
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -386,7 +387,11 @@ function PlaylistDetailPage() {
 						<img
 							src={coverUrl}
 							alt={playlist.name}
-							className="w-full h-full object-cover"
+							className={cn(
+								"w-full h-full object-cover transition-opacity duration-200",
+								coverLoaded ? "opacity-100" : "opacity-0",
+							)}
+							onLoad={() => setCoverLoaded(true)}
 						/>
 					) : (
 						<div className="w-full h-full flex items-center justify-center">

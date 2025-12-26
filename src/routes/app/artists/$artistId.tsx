@@ -7,6 +7,7 @@ import { AlbumGrid } from "@/components/AlbumCard";
 import { SimilarArtists } from "@/components/SimilarArtists";
 import { Button } from "@/components/ui/button";
 import { getArtist, getCoverArtUrl } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/artists/$artistId")({
 	component: ArtistDetailPage,
@@ -16,6 +17,7 @@ function ArtistDetailPage() {
 	const { artistId } = Route.useParams();
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
 	const [imageError, setImageError] = useState(false);
+	const [imageLoaded, setImageLoaded] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["artist", artistId],
@@ -80,7 +82,11 @@ function ArtistDetailPage() {
 						<img
 							src={coverUrl}
 							alt={artist.name}
-							className="w-full h-full object-cover"
+							className={cn(
+								"w-full h-full object-cover transition-opacity duration-200",
+								imageLoaded ? "opacity-100" : "opacity-0",
+							)}
+							onLoad={() => setImageLoaded(true)}
 							onError={() => setImageError(true)}
 						/>
 					) : (

@@ -34,6 +34,7 @@ function AlbumDetailPage() {
 	const { albumId } = Route.useParams();
 	const [coverUrl, setCoverUrl] = useState<string | null>(null);
 	const [imageError, setImageError] = useState(false);
+	const [imageLoaded, setImageLoaded] = useState(false);
 	const { currentTrack, isPlaying, togglePlayPause } = usePlayer();
 
 	const { data, isLoading, error } = useQuery({
@@ -125,7 +126,11 @@ function AlbumDetailPage() {
 						<img
 							src={coverUrl}
 							alt={album.name}
-							className="w-full h-full object-cover"
+							className={cn(
+								"w-full h-full object-cover transition-opacity duration-200",
+								imageLoaded ? "opacity-100" : "opacity-0",
+							)}
+							onLoad={() => setImageLoaded(true)}
 							onError={() => setImageError(true)}
 						/>
 					) : (
