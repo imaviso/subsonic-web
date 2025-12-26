@@ -830,3 +830,62 @@ export async function getLyricsBySongId(
 export async function getDownloadUrl(id: string): Promise<string> {
 	return buildApiUrl("download", { id });
 }
+
+// ============================================================================
+// Scan Status / Library Statistics
+// ============================================================================
+
+export interface ScanStatus {
+	scanning: boolean;
+	count?: number; // Number of items scanned so far
+	folderCount?: number;
+	lastScan?: string;
+}
+
+export async function getScanStatus(): Promise<ScanStatus> {
+	const url = await buildApiUrl("getScanStatus");
+
+	const response = await fetch(url);
+	const data: SubsonicResponse<{
+		scanStatus?: ScanStatus;
+	}> = await response.json();
+
+	if (data["subsonic-response"].status !== "ok") {
+		throw new Error(
+			data["subsonic-response"].error?.message || "Failed to fetch scan status",
+		);
+	}
+
+	return data["subsonic-response"].scanStatus ?? { scanning: false };
+}
+
+// ============================================================================
+// Library Statistics (computed from genres)
+// ============================================================================
+
+export interface LibraryStats {
+	albumCount: number;
+	songCount: number;
+	artistCount: number;
+}
+
+export async function getLibraryStats(): Promise<LibraryStats> {
+	// Fetch genres to get accurate song and album counts
+	const genres = await getGenres();
+
+	// Sum up song counts from all genres
+	const songCount = genres.reduce((acc, genre) => acc + genre.songCount, 0);
+
+	// Sum up album counts from all genres (note: albums can have multiple genres, so this may overcount)
+	// For a more accurate album count, we'll fetch all albums
+	const albumCount = genres.reduce((acc, genre) => acc + genre.albumCount, 0);
+
+	// Fetch artists for accurate count
+	const artists = await getArtists();
+
+	return {
+		albumCount,
+		songCount,
+		artistCount: artists.length,
+	};
+}

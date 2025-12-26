@@ -12,12 +12,7 @@ import {
 
 import { AlbumGrid } from "@/components/AlbumCard";
 import { SongList } from "@/components/SongList";
-import {
-	getAlbumList,
-	getArtists,
-	getRandomSongs,
-	getStarred,
-} from "@/lib/api";
+import { getAlbumList, getLibraryStats, getStarred } from "@/lib/api";
 
 export const Route = createFileRoute("/app/")({
 	component: AppHome,
@@ -29,14 +24,11 @@ function AppHome() {
 		queryFn: () => getAlbumList("newest", 12),
 	});
 
-	const { data: artists } = useQuery({
-		queryKey: ["artists"],
-		queryFn: getArtists,
-	});
-
-	const { data: songs } = useQuery({
-		queryKey: ["randomSongs"],
-		queryFn: () => getRandomSongs(1),
+	// Library stats (albums, artists, songs counts)
+	const { data: libraryStats } = useQuery({
+		queryKey: ["libraryStats"],
+		queryFn: getLibraryStats,
+		staleTime: 5 * 60 * 1000, // Cache for 5 minutes
 	});
 
 	// Starred/Favorites
@@ -58,6 +50,13 @@ function AppHome() {
 			queryFn: () => getAlbumList("recent", 12),
 		});
 
+	const formatNumber = (num: number) => {
+		if (num >= 1000) {
+			return `${(num / 1000).toFixed(1)}k`;
+		}
+		return num.toString();
+	};
+
 	return (
 		<div className="p-6 space-y-8">
 			{/* Header */}
@@ -73,17 +72,17 @@ function AppHome() {
 				<StatCard
 					icon={Disc3}
 					label="Albums"
-					value={recentAlbums?.length ? "12+" : "—"}
+					value={libraryStats ? formatNumber(libraryStats.albumCount) : "—"}
 				/>
 				<StatCard
 					icon={Users}
 					label="Artists"
-					value={artists?.length?.toString() ?? "—"}
+					value={libraryStats ? formatNumber(libraryStats.artistCount) : "—"}
 				/>
 				<StatCard
 					icon={Music}
 					label="Songs"
-					value={songs?.length ? "Many" : "—"}
+					value={libraryStats ? formatNumber(libraryStats.songCount) : "—"}
 				/>
 			</div>
 
