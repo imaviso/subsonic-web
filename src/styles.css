@@ -195,12 +195,29 @@ code {
   navigation: auto;
 }
 
-::view-transition-old(root) {
+/* Only animate the main content area */
+::view-transition-old(main-content) {
   animation: fade-out 150ms ease-out;
 }
 
-::view-transition-new(root) {
+::view-transition-new(main-content) {
   animation: fade-in 150ms ease-in;
+}
+
+/* Keep sidebar, player, and header static during transitions */
+::view-transition-old(sidebar),
+::view-transition-new(sidebar),
+::view-transition-old(player),
+::view-transition-new(player),
+::view-transition-old(mobile-header),
+::view-transition-new(mobile-header) {
+  animation: none;
+}
+
+/* Disable default root transition */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
 }
 
 @keyframes fade-out {
@@ -223,8 +240,8 @@ code {
 
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  ::view-transition-old(main-content),
+  ::view-transition-new(main-content) {
     animation: none;
   }
 }

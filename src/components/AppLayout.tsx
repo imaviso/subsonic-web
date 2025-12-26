@@ -90,7 +90,7 @@ function AppSidebar() {
 	};
 
 	return (
-		<Sidebar collapsible="icon">
+		<Sidebar collapsible="icon" style={{ viewTransitionName: "sidebar" }}>
 			<SidebarHeader className="border-b">
 				<SidebarMenu>
 					<SidebarMenuItem>
@@ -232,7 +232,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
 	return (
 		<SidebarInset className="h-svh flex flex-col">
 			{/* Mobile header */}
-			<header className="flex h-14 items-center gap-2 border-b px-4 md:hidden shrink-0">
+			<header
+				className="flex h-14 items-center gap-2 border-b px-4 md:hidden shrink-0"
+				style={{ viewTransitionName: "mobile-header" }}
+			>
 				<SidebarTrigger />
 				<div className="flex items-center gap-2">
 					<div className="size-7 rounded-lg bg-primary flex items-center justify-center">
@@ -243,7 +246,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
 			</header>
 
 			{/* Scrollable content */}
-			<main className="flex-1 overflow-auto">{children}</main>
+			<main
+				className="flex-1 overflow-auto"
+				style={{ viewTransitionName: "main-content" }}
+			>
+				{children}
+			</main>
 
 			{/* Player bar */}
 			{hasPlayer && <Player />}

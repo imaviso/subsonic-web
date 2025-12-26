@@ -238,7 +238,10 @@ export function Player() {
 	};
 
 	return (
-		<div className="relative border-t bg-card px-3 py-2 sm:px-4 sm:py-0 sm:h-20 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+		<div
+			className="relative border-t bg-card px-3 py-2 sm:px-4 sm:py-0 sm:h-20 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
+			style={{ viewTransitionName: "player" }}
+		>
 			{/* Mobile: Top row with track info and controls */}
 			<div className="flex items-center gap-3 sm:flex-1 sm:basis-0 min-w-0">
 				{/* Track cover - smaller on mobile */}
