@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 import { AddToPlaylistButton } from "@/components/AddToPlaylistButton";
 import { LyricsPanel } from "@/components/LyricsPanel";
+import { QueueContextMenu } from "@/components/QueueContextMenu";
 import { StarButton } from "@/components/StarButton";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -49,6 +50,7 @@ export function Player() {
 		seek,
 		setVolume,
 		playSong,
+		removeFromQueue,
 		toggleShuffle,
 		toggleRepeat,
 	} = usePlayer();
@@ -429,39 +431,46 @@ export function Player() {
 						) : (
 							<div className="divide-y">
 								{queue.map((song, index) => (
-									<button
-										type="button"
+									<QueueContextMenu
 										key={`${song.id}-${index}`}
-										onClick={() => playSong(song, queue, index)}
-										className={cn(
-											"w-full flex items-center gap-3 px-4 py-2 hover:bg-muted/50 transition-colors text-left",
-											index === queueIndex && "bg-muted/30",
-										)}
+										song={song}
+										index={index}
+										isCurrentTrack={index === queueIndex}
+										onRemove={() => removeFromQueue(index)}
 									>
-										<span
+										<button
+											type="button"
+											onClick={() => playSong(song, queue, index)}
 											className={cn(
-												"w-5 text-xs text-muted-foreground",
-												index === queueIndex && "text-primary font-medium",
+												"w-full flex items-center gap-3 px-4 py-2 hover:bg-muted/50 transition-colors text-left",
+												index === queueIndex && "bg-muted/30",
 											)}
 										>
-											{index + 1}
-										</span>
-										<div className="min-w-0 flex-1">
-											<p
+											<span
 												className={cn(
-													"text-sm truncate",
-													index === queueIndex
-														? "text-primary font-medium"
-														: "text-foreground",
+													"w-5 text-xs text-muted-foreground",
+													index === queueIndex && "text-primary font-medium",
 												)}
 											>
-												{song.title}
-											</p>
-											<p className="text-xs text-muted-foreground truncate">
-												{song.artist}
-											</p>
-										</div>
-									</button>
+												{index + 1}
+											</span>
+											<div className="min-w-0 flex-1">
+												<p
+													className={cn(
+														"text-sm truncate",
+														index === queueIndex
+															? "text-primary font-medium"
+															: "text-foreground",
+													)}
+												>
+													{song.title}
+												</p>
+												<p className="text-xs text-muted-foreground truncate">
+													{song.artist}
+												</p>
+											</div>
+										</button>
+									</QueueContextMenu>
 								))}
 							</div>
 						)}

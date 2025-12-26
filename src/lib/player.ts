@@ -408,6 +408,31 @@ export function clearQueue() {
 	updateState({ ...initialState });
 }
 
+export function removeFromQueue(index: number) {
+	const { queue, originalQueue, queueIndex, currentTrack } = playerState;
+
+	// Don't allow removing the currently playing song
+	if (index === queueIndex && currentTrack) {
+		return;
+	}
+
+	// Remove from both queues
+	const newQueue = queue.filter((_, i) => i !== index);
+	const newOriginalQueue = originalQueue.filter((_, i) => i !== index);
+
+	// Adjust queueIndex if needed
+	let newQueueIndex = queueIndex;
+	if (index < queueIndex) {
+		newQueueIndex = queueIndex - 1;
+	}
+
+	updateState({
+		queue: newQueue,
+		originalQueue: newOriginalQueue,
+		queueIndex: newQueueIndex,
+	});
+}
+
 // Shuffle array using Fisher-Yates algorithm
 function shuffleArray<T>(array: T[]): T[] {
 	const shuffled = [...array];
@@ -587,6 +612,7 @@ export function usePlayer() {
 		setVolume,
 		addToQueue,
 		playNextInQueue,
+		removeFromQueue,
 		clearQueue,
 		toggleShuffle,
 		toggleRepeat,
