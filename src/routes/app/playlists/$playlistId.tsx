@@ -2,11 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	ArrowLeft,
+	Check,
 	ListMusic,
 	Loader2,
 	Pause,
 	Pencil,
 	Play,
+	Plus,
+	Search,
 	Shuffle,
 	Trash2,
 	X,
@@ -29,6 +32,8 @@ import {
 	deletePlaylist,
 	getCoverArtUrl,
 	getPlaylist,
+	type Song,
+	search,
 	updatePlaylist,
 } from "@/lib/api";
 import { playAlbum, playSong, usePlayer } from "@/lib/player";
@@ -55,6 +60,13 @@ function PlaylistDetailPage() {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editName, setEditName] = useState("");
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [addSongsDialogOpen, setAddSongsDialogOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [searchResults, setSearchResults] = useState<Song[]>([]);
+	const [selectedSongIds, setSelectedSongIds] = useState<Set<string>>(
+		new Set(),
+	);
+	const [isSearching, setIsSearching] = useState(false);
 	const { currentTrack, isPlaying, togglePlayPause, shuffle, toggleShuffle } =
 		usePlayer();
 
@@ -90,6 +102,53 @@ function PlaylistDetailPage() {
 			toast.error("Failed to delete playlist");
 		},
 	});
+
+	const addSongsMutation = useMutation({
+		mutationFn: (songIds: string[]) =>
+			updatePlaylist({ playlistId, songIdToAdd: songIds }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["playlist", playlistId] });
+			queryClient.invalidateQueries({ queryKey: ["playlists"] });
+			setAddSongsDialogOpen(false);
+			setSearchQuery("");
+			setSearchResults([]);
+			setSelectedSongIds(new Set());
+			toast.success("Songs added to playlist");
+		},
+		onError: () => {
+			toast.error("Failed to add songs");
+		},
+	});
+
+	const handleSearch = async () => {
+		if (!searchQuery.trim()) return;
+		setIsSearching(true);
+		try {
+			const results = await search(searchQuery);
+			setSearchResults(results.songs);
+		} catch {
+			toast.error("Search failed");
+		} finally {
+			setIsSearching(false);
+		}
+	};
+
+	const toggleSongSelection = (songId: string) => {
+		setSelectedSongIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(songId)) {
+				next.delete(songId);
+			} else {
+				next.add(songId);
+			}
+			return next;
+		});
+	};
+
+	const handleAddSelectedSongs = () => {
+		if (selectedSongIds.size === 0) return;
+		addSongsMutation.mutate(Array.from(selectedSongIds));
+	};
 
 	useEffect(() => {
 		if (playlist?.coverArt) {
@@ -369,6 +428,15 @@ function PlaylistDetailPage() {
 							variant="outline"
 							size="icon"
 							className="h-10 w-10"
+							onClick={() => setAddSongsDialogOpen(true)}
+							title="Add songs"
+						>
+							<Plus className="w-5 h-5" />
+						</Button>
+						<Button
+							variant="outline"
+							size="icon"
+							className="h-10 w-10"
 							onClick={handleDelete}
 							disabled={deleteMutation.isPending}
 							title="Delete playlist"
@@ -383,14 +451,135 @@ function PlaylistDetailPage() {
 				</div>
 			</div>
 
+			{/* Add Songs Dialog */}
+			<Dialog open={addSongsDialogOpen} onOpenChange={setAddSongsDialogOpen}>
+				<DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+					<DialogHeader>
+						<DialogTitle>Add Songs to Playlist</DialogTitle>
+						<DialogDescription>
+							Search for songs to add to "{playlist.name}"
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex gap-2">
+						<div className="relative flex-1">
+							<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+							<Input
+								placeholder="Search for songs..."
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										handleSearch();
+									}
+								}}
+								className="pl-9"
+							/>
+						</div>
+						<Button onClick={handleSearch} disabled={isSearching}>
+							{isSearching ? (
+								<Loader2 className="w-4 h-4 animate-spin" />
+							) : (
+								"Search"
+							)}
+						</Button>
+					</div>
+					<div className="flex-1 overflow-y-auto min-h-0 space-y-1">
+						{searchResults.length === 0 ? (
+							<div className="text-center py-8 text-muted-foreground">
+								{searchQuery
+									? "No songs found"
+									: "Search for songs to add to your playlist"}
+							</div>
+						) : (
+							searchResults.map((song) => {
+								const isSelected = selectedSongIds.has(song.id);
+								const isAlreadyInPlaylist = songs.some((s) => s.id === song.id);
+								return (
+									<button
+										type="button"
+										key={song.id}
+										onClick={() =>
+											!isAlreadyInPlaylist && toggleSongSelection(song.id)
+										}
+										disabled={isAlreadyInPlaylist}
+										className={cn(
+											"w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors",
+											isAlreadyInPlaylist
+												? "opacity-50 cursor-not-allowed"
+												: isSelected
+													? "bg-primary/10 border border-primary"
+													: "hover:bg-muted",
+										)}
+									>
+										<div
+											className={cn(
+												"w-5 h-5 rounded border flex items-center justify-center flex-shrink-0",
+												isSelected
+													? "bg-primary border-primary text-primary-foreground"
+													: "border-muted-foreground",
+											)}
+										>
+											{isSelected && <Check className="w-3 h-3" />}
+										</div>
+										<div className="flex-1 min-w-0">
+											<p className="font-medium truncate">{song.title}</p>
+											<p className="text-sm text-muted-foreground truncate">
+												{song.artist} · {song.album}
+											</p>
+										</div>
+										{isAlreadyInPlaylist && (
+											<span className="text-xs text-muted-foreground">
+												Already added
+											</span>
+										)}
+									</button>
+								);
+							})
+						)}
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => {
+								setAddSongsDialogOpen(false);
+								setSearchQuery("");
+								setSearchResults([]);
+								setSelectedSongIds(new Set());
+							}}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleAddSelectedSongs}
+							disabled={
+								selectedSongIds.size === 0 || addSongsMutation.isPending
+							}
+						>
+							{addSongsMutation.isPending ? (
+								<>
+									<Loader2 className="w-4 h-4 animate-spin mr-2" />
+									Adding...
+								</>
+							) : (
+								`Add ${selectedSongIds.size} Song${selectedSongIds.size !== 1 ? "s" : ""}`
+							)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
 			{/* Song list */}
 			{songs.length === 0 ? (
 				<div className="text-center py-12 bg-card rounded-lg border">
 					<ListMusic className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
 					<p className="text-muted-foreground">This playlist is empty</p>
 					<p className="text-sm text-muted-foreground mt-1">
-						Add songs from albums or the song list
+						Add songs from albums or search to add songs
 					</p>
+					<Button className="mt-4" onClick={() => setAddSongsDialogOpen(true)}>
+						<Plus className="w-4 h-4 mr-2" />
+						Add Songs
+					</Button>
 				</div>
 			) : (
 				<PlaylistSongList playlistId={playlistId} songs={songs} />
