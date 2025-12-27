@@ -97,13 +97,13 @@ function AppSidebar() {
 			<SidebarHeader className="border-b">
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" asChild tooltip="Subsonic">
+						<SidebarMenuButton size="lg" asChild tooltip="Slothsonic">
 							<Link to="/app">
 								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 									<Library className="size-4" />
 								</div>
 								<div className="grid flex-1 text-left text-sm leading-tight">
-									<span className="truncate font-semibold">Subsonic</span>
+									<span className="truncate font-semibold">Slothsonic</span>
 									<span className="truncate text-xs text-muted-foreground">
 										{credentials?.serverUrl?.replace(/https?:\/\//, "")}
 									</span>
@@ -252,7 +252,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 					<div className="size-7 rounded-lg bg-primary flex items-center justify-center">
 						<Library className="size-4 text-primary-foreground" />
 					</div>
-					<span className="font-semibold text-foreground">Subsonic</span>
+					<span className="font-semibold text-foreground">Slothsonic</span>
 				</div>
 			</header>
 

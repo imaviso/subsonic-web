@@ -79,7 +79,7 @@ function LoginPage() {
 						<Music className="w-8 h-8 text-foreground" />
 					</div>
 					<h1 className="text-3xl font-bold text-foreground mb-2">
-						Subsonic Client
+						Slothsonic
 					</h1>
 					<p className="text-muted-foreground">Connect to your music server</p>
 				</div>
