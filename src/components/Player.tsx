@@ -568,7 +568,7 @@ export function Player() {
 			style={{ viewTransitionName: "player" }}
 		>
 			{/* Track info */}
-			<div className="flex items-center gap-3 flex-1 basis-0 min-w-0">
+			<div className="flex items-center gap-3 w-48 shrink-0 min-w-0 lg:w-auto lg:flex-1 lg:basis-0">
 				<Link
 					to={currentTrack.albumId ? "/app/albums/$albumId" : "/"}
 					params={currentTrack.albumId ? { albumId: currentTrack.albumId } : {}}
@@ -613,7 +613,7 @@ export function Player() {
 			</div>
 
 			{/* Player controls */}
-			<div className="flex flex-col items-center gap-1 w-full max-w-md lg:max-w-xl">
+			<div className="flex flex-col items-center gap-1 flex-1 min-w-0 max-w-md lg:max-w-xl">
 				<div className="flex items-center gap-2">
 					<Button
 						variant="ghost"
@@ -698,7 +698,7 @@ export function Player() {
 			</div>
 
 			{/* Right side controls */}
-			<div className="flex items-center justify-end gap-2 flex-1 basis-0">
+			<div className="flex items-center justify-end gap-2 shrink-0 lg:flex-1 lg:basis-0">
 				<StarButton
 					id={currentTrack.id}
 					type="song"
