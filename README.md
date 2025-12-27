@@ -1,310 +1,177 @@
-Welcome to your new TanStack app! 
+# Slothsonic
 
-# Getting Started
+A modern desktop music player client for Subsonic/OpenSubsonic API servers (Navidrome, Airsonic, etc.).
 
-To run this application:
+**Note:** This is a personal project.
+
+## Features
+
+- Cross-platform desktop app (Windows, macOS, Linux)
+- MPV audio backend for high-quality gapless playback
+- MPRIS integration on Linux for media key support
+- Fallback to web audio when MPV is unavailable
+
+## Requirements
+
+- [MPV](https://mpv.io/) - Required for the native audio backend (optional, falls back to web audio)
+
+## Tech Stack
+
+- **Desktop**: Electron
+- **Audio Backend**: MPV (via node-mpv)
+- **Runtime**: Bun
+- **Framework**: React 19
+- **Routing**: TanStack Router (file-based routing)
+- **State Management**: TanStack Query for server state
+- **Forms**: TanStack Form with Valibot validation
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui
+- **Linter/Formatter**: Biome
+- **Testing**: Vitest with React Testing Library
+
+## Getting Started
+
+### Development
 
 ```bash
+# Install dependencies
 bun install
-bun --bun run start
+
+# Run the Electron app in development mode
+bun run electron:dev
 ```
 
-# Building For Production
+This starts both the Vite dev server and Electron concurrently.
 
-To build this application for production:
+### Development with Nix
 
 ```bash
-bun --bun run build
+# Enter the development shell (includes bun, node, electron, mpv, etc.)
+nix develop
+
+# Then run as usual
+bun install
+bun run electron:dev
 ```
 
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+### Web-only Development
 
 ```bash
-bun --bun run test
+# Start Vite dev server only (no Electron)
+bun dev
 ```
 
-## Styling
+The web app will be available at http://localhost:3000.
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+## Installation
 
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
+### Nix (Flakes)
 
 ```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
+# Run directly
+nix run github:imaviso/slothsonic
+
+# Or install to profile
+nix profile install github:imaviso/slothsonic
 ```
 
+Add to your NixOS or Home Manager configuration:
 
-## Shadcn
+```nix
+# flake.nix inputs
+inputs.slothsonic.url = "github:imaviso/slothsonic";
 
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
+# In your configuration
+environment.systemPackages = [ inputs.slothsonic.packages.${system}.default ];
+# or for Home Manager
+home.packages = [ inputs.slothsonic.packages.${system}.default ];
+```
+
+The Nix package includes MPV and all required dependencies.
+
+### Other Platforms
+
+Download pre-built packages from the [Releases](https://github.com/imaviso/slothsonic/releases) page:
+
+- **Windows**: NSIS installer or portable executable
+- **macOS**: DMG or ZIP
+- **Linux**: AppImage
+
+## Building for Production
 
 ```bash
-pnpm dlx shadcn@latest add button
+# Build for current platform
+bun run electron:build
+
+# Build for specific platforms
+bun run electron:build:win     # Windows (NSIS installer + portable)
+bun run electron:build:mac     # macOS (DMG + ZIP)
+bun run electron:build:linux   # Linux (AppImage)
 ```
 
+Built packages are output to the `release/` directory.
 
-
-## Routing
-This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add another a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you use the `<Outlet />` component.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-
-import { Link } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <header>
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-        </nav>
-      </header>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-})
-```
-
-The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-const peopleRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/people",
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json() as Promise<{
-      results: {
-        name: string;
-      }[];
-    }>;
-  },
-  component: () => {
-    const data = peopleRoute.useLoaderData();
-    return (
-      <ul>
-        {data.results.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    );
-  },
-});
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-### React-Query
-
-React-Query is an excellent addition or alternative to route loading and integrating it into you application is a breeze.
-
-First add your dependencies:
+## Available Commands
 
 ```bash
-bun install @tanstack/react-query @tanstack/react-query-devtools
+# Development
+bun dev                  # Start Vite dev server only
+bun run electron:dev     # Start Electron + Vite dev server
+
+# Building
+bun run build            # Build web assets
+bun run electron:build   # Build Electron app for current platform
+
+# Testing & Linting
+bun test                 # Run all tests
+bun run check            # Lint and format check (Biome)
+bun run format           # Format code (auto-fix)
+bun run lint             # Lint code (auto-fix)
+
+# Type checking
+bunx tsc --noEmit
 ```
 
-Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
+## Project Structure
 
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// ...
-
-const queryClient = new QueryClient();
-
-// ...
-
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
-}
+```
+electron/
+├── main.js              # Electron main process
+├── mpris.js             # Linux MPRIS integration
+└── preload.cjs          # Preload script for IPC
+src/
+├── components/
+│   ├── ui/              # shadcn/ui base components
+│   └── *.tsx            # Application components
+├── hooks/               # Custom React hooks
+├── integrations/        # Third-party integrations
+├── lib/
+│   ├── api.ts           # Subsonic API functions and types
+│   ├── audio-backend.ts # MPV/Web audio abstraction
+│   ├── auth.ts          # Authentication state management
+│   ├── player.ts        # Audio player state
+│   ├── subsonic.ts      # Subsonic API utilities
+│   ├── theme.ts         # Theme management
+│   └── utils.ts         # Utility functions
+├── routes/              # TanStack Router file-based routes
+└── main.tsx             # App entry point
 ```
 
-You can also add TanStack Query Devtools to the root route (optional).
+## MPV Configuration
 
-```tsx
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+Slothsonic automatically detects MPV in common locations:
 
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <ReactQueryDevtools buttonPosition="top-right" />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
+- **Linux**: `/usr/bin/mpv`, `/usr/local/bin/mpv`, NixOS paths
+- **macOS**: Homebrew paths (`/opt/homebrew/bin/mpv`)
+- **Windows**: `C:\Program Files\mpv\mpv.exe`
 
-Now you can use `useQuery` to fetch your data.
+You can also configure a custom MPV path in the application settings.
 
-```tsx
-import { useQuery } from "@tanstack/react-query";
+## API Reference
 
-import "./App.css";
+- Subsonic API Docs: https://www.subsonic.org/pages/api.jsp
+- OpenSubsonic Docs: https://opensubsonic.netlify.app/
 
-function App() {
-  const { data } = useQuery({
-    queryKey: ["people"],
-    queryFn: () =>
-      fetch("https://swapi.dev/api/people")
-        .then((res) => res.json())
-        .then((data) => data.results as { name: string }[]),
-    initialData: [],
-  });
+## License
 
-  return (
-    <div>
-      <ul>
-        {data.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default App;
-```
-
-You can find out everything you need to know on how to use React-Query in the [React-Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview).
-
-## State Management
-
-Another common requirement for React applications is state management. There are many options for state management in React. TanStack Store provides a great starting point for your project.
-
-First you need to add TanStack Store as a dependency:
-
-```bash
-bun install @tanstack/store
-```
-
-Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
-
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-function App() {
-  const count = useStore(countStore);
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-    </div>
-  );
-}
-
-export default App;
-```
-
-One of the many nice features of TanStack Store is the ability to derive state from other state. That derived state will update when the base state updates.
-
-Let's check this out by doubling the count using derived state.
-
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store, Derived } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-const doubledStore = new Derived({
-  fn: () => countStore.state * 2,
-  deps: [countStore],
-});
-doubledStore.mount();
-
-function App() {
-  const count = useStore(countStore);
-  const doubledCount = useStore(doubledStore);
-
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-      <div>Doubled - {doubledCount}</div>
-    </div>
-  );
-}
-
-export default App;
-```
-
-We use the `Derived` class to create a new store that is derived from another store. The `Derived` class has a `mount` method that will start the derived store updating.
-
-Once we've created the derived store we can use it in the `App` component just like we would any other store using the `useStore` hook.
-
-You can find out everything you need to know on how to use TanStack Store in the [TanStack Store documentation](https://tanstack.com/store/latest).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
+MIT
