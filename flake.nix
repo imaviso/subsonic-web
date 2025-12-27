@@ -54,11 +54,11 @@
 
           src = ./.;
 
-          npmDepsHash = "sha256-Sr4lBlkDRWhKUfG8JYlH97lmQ8XbiMV8MSNFKxBx/S8=";
+          npmDepsHash = "sha256-y0mln4/jLBCw2L9jZhIUTRCUA8X2Lar4tUFMAeDFc44=";
 
-          # Handle git dependencies and cache issues
-          makeCacheWritable = true;
-          npmFlags = ["--legacy-peer-deps" "--ignore-scripts"];
+           # Handle git dependencies and cache issues
+           makeCacheWritable = true;
+           npmFlags = ["--legacy-peer-deps" "--ignore-scripts" "--prefer-offline"];
 
           nativeBuildInputs = with pkgs; [
             nodejs
